@@ -5,6 +5,10 @@
 
 II-Agent is an open-source intelligent assistant designed to streamline and enhance workflows across multiple domains. It represents a significant advancement in how we interact with technology—shifting from passive tools to intelligent systems capable of independently executing complex tasks.
 
+## Introduction
+https://github.com/user-attachments/assets/d0eb7440-a6e2-4276-865c-a1055181bb33
+
+
 ## Overview
 
 II Agent is built around providing an agentic interface to Anthropic Claude models. It offers:
