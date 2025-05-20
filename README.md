@@ -1,15 +1,20 @@
-<p align="center">
+<div align="center">
   <img src="assets/ii.png" width="200"/>
-</p>
+
+
+
+
+# II Agent
 
 [![GitHub stars](https://img.shields.io/github/stars/Intelligent-Internet/ii-agent?style=social)](https://github.com/Intelligent-Internet/ii-agent/stargazers)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Blog](https://img.shields.io/badge/Blog-II--Agent-blue)](https://ii.inc/web/blog/post/ii-agent)
 [![GAIA Benchmark](https://img.shields.io/badge/GAIA-Benchmark-green)](https://ii-agent-gaia.ii.inc/)
-
-# II Agent
+</div>
 
 II-Agent is an open-source intelligent assistant designed to streamline and enhance workflows across multiple domains. It represents a significant advancement in how we interact with technology—shifting from passive tools to intelligent systems capable of independently executing complex tasks.
+
+
 
 ## Introduction
 https://github.com/user-attachments/assets/d0eb7440-a6e2-4276-865c-a1055181bb33
