@@ -109,9 +109,10 @@ export default function Home() {
             for (let i = 0; i < data.events.length; i++) {
               const event = data.events[i];
               // Process each event with a 2-second delay
-              await new Promise((resolve) => setTimeout(resolve, 1500));
+              await new Promise((resolve) => setTimeout(resolve, 50));
               handleEvent({ ...event.event_payload, id: event.id });
             }
+            setIsLoading(false);
           };
 
           // Start processing events with delay
@@ -588,7 +589,11 @@ export default function Home() {
             },
           ]);
         } else {
-          if (data.content.tool_name !== TOOL.SEQUENTIAL_THINKING && data.content.tool_name !== TOOL.PRESENTATION) { // TODO: Implement helper function to handle tool results
+          if (
+            data.content.tool_name !== TOOL.SEQUENTIAL_THINKING &&
+            data.content.tool_name !== TOOL.PRESENTATION
+          ) {
+            // TODO: Implement helper function to handle tool results
             setMessages((prev) => {
               const lastMessage = cloneDeep(prev[prev.length - 1]);
               if (
