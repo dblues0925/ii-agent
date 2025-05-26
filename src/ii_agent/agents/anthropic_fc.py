@@ -60,6 +60,7 @@ try breaking down the task into smaller steps. After call this tool to update or
         max_turns: int = 10,
         websocket: Optional[WebSocket] = None,
         session_id: Optional[uuid.UUID] = None,
+        interactive_mode: bool = True,
     ):
         """Initialize the agent.
 
@@ -82,6 +83,7 @@ try breaking down the task into smaller steps. After call this tool to update or
         self.tool_manager = AgentToolManager(
             tools=tools,
             logger_for_agent_logs=logger_for_agent_logs,
+            interactive_mode=interactive_mode,
         )
 
         self.logger_for_agent_logs = logger_for_agent_logs

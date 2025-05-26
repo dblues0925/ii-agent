@@ -575,6 +575,17 @@ export default function Home() {
               timestamp: Date.now(),
             },
           ]);
+        } else if (data.content.tool_name === TOOL.MESSAGE_USER) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: data.id,
+              role: "assistant",
+              content: (data.content.tool_input as { text: string })
+                .text as string,
+              timestamp: Date.now(),
+            },
+          ]);
         } else {
           const message: Message = {
             id: data.id,
@@ -657,7 +668,8 @@ export default function Home() {
         } else {
           if (
             data.content.tool_name !== TOOL.SEQUENTIAL_THINKING &&
-            data.content.tool_name !== TOOL.PRESENTATION
+            data.content.tool_name !== TOOL.PRESENTATION &&
+            data.content.tool_name !== TOOL.MESSAGE_USER
           ) {
             // TODO: Implement helper function to handle tool results
             setMessages((prev) => {

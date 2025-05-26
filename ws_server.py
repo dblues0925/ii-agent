@@ -51,7 +51,7 @@ from ii_agent.llm.context_manager.standard import StandardContextManager
 from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.db.manager import DatabaseManager
 from ii_agent.tools import get_system_tools
-from ii_agent.prompts.system_prompt import SYSTEM_PROMPT
+from ii_agent.prompts.system_prompt import SYSTEM_PROMPT, SYSTEM_PROMPT_WITH_SEQ_THINKING
 
 MAX_OUTPUT_TOKENS_PER_TURN = 32768
 MAX_TURNS = 200
@@ -97,16 +97,7 @@ async def websocket_endpoint(websocket: WebSocket):
     )
     print(f"Workspace manager created: {workspace_manager}")
 
-    try:
-        # Initialize LLM client
-        client = get_client(
-            "anthropic-direct",
-            model_name=DEFAULT_MODEL,
-            use_caching=False,
-            project_id=global_args.project_id,
-            region=global_args.region,
-        )
-
+    try:    
         # Initial connection message with session info
         await websocket.send_json(
             RealtimeEvent(
@@ -128,6 +119,16 @@ async def websocket_endpoint(websocket: WebSocket):
                 content = message.get("content", {})
 
                 if msg_type == "init_agent":
+                    # Initialize LLM client
+                    client = get_client(
+                        "anthropic-direct",
+                        model_name=DEFAULT_MODEL,
+                        use_caching=False,
+                        project_id=global_args.project_id,
+                        region=global_args.region,
+                        thinking_tokens=content.get("thinking_tokens", 2048),
+                    )
+
                     # Create a new agent for this connection
                     tool_args = content.get("tool_args", {})
                     agent = create_agent_for_connection(
@@ -321,7 +322,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     # Process a request to enhance a prompt using an LLM
                     user_input = content.get("text", "")
                     files = content.get("files", [])
-
+                    # Initialize LLM client
+                    client = get_client(
+                        "anthropic-direct",
+                        model_name=DEFAULT_MODEL,
+                        use_caching=False,
+                        project_id=global_args.project_id,
+                        region=global_args.region,
+                        thinking_tokens=0, # Don't need thinking tokens for this
+                    )
                     # Call the enhance_prompt function from the module
                     success, message, enhanced_prompt = await enhance_user_prompt(
                         client=client,
@@ -515,7 +524,7 @@ def create_agent_for_connection(
         tool_args=tool_args,
     )
     agent = AnthropicFC(
-        system_prompt=SYSTEM_PROMPT,
+        system_prompt=SYSTEM_PROMPT_WITH_SEQ_THINKING if tool_args.get("sequential_thinking", False) else SYSTEM_PROMPT,
         client=client,
         tools=tools,
         workspace_manager=workspace_manager,
