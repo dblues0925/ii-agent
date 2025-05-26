@@ -47,6 +47,7 @@ export enum TOOL {
   IMAGE_GENERATE = "generate_image_from_text",
   DEEP_RESEARCH = "deep_research",
   LIST_HTML_LINKS = "list_html_links",
+  RETURN_CONTROL_TO_USER = "return_control_to_user",
   // browser tools
   BROWSER_VIEW = "browser_view",
   BROWSER_NAVIGATION = "browser_navigation",

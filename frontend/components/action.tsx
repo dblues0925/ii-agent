@@ -258,7 +258,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
   if (
     type === TOOL.COMPLETE ||
     type === TOOL.BROWSER_VIEW ||
-    type === TOOL.LIST_HTML_LINKS
+    type === TOOL.LIST_HTML_LINKS ||
+    type === TOOL.RETURN_CONTROL_TO_USER
   )
     return null;
 
