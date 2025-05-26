@@ -6,7 +6,15 @@ from ii_agent.tools.base import LLMTool, ToolImplOutput
 class MessageTool(LLMTool):
     name = "message_user"
 
-    description = "Send a message to user without requiring a response. Use for sharing your reasoning, acknowledging receipt of messages, providing progress updates, reporting task completion, or explaining changes in approach."
+    description = """\
+Send a message to the user. Use this tool to communicate effectively in a variety of scenarios, including:
+* Sharing your current thoughts or reasoning process
+* Asking clarifying or follow-up questions
+* Acknowledging receipt of messages
+* Providing real-time progress updates
+* Reporting completion of tasks or milestones
+* Explaining changes in strategy, unexpected behavior, or encountered issues"""
+    
     input_schema = {
         "type": "object",
         "properties": {
