@@ -24,7 +24,7 @@ class SlideDeckInitTool(LLMTool):
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
     ) -> ToolImplOutput:
-        self.history = MessageHistory()
+        # self.history = MessageHistory(context_manager=self.context_manager)
 
         try:
             # Create the presentation directory if it doesn't exist

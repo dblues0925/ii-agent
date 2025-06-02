@@ -22,6 +22,7 @@ from rich.panel import Panel
 
 from ii_agent.tools import get_system_tools
 from ii_agent.prompts.system_prompt import SYSTEM_PROMPT
+from ii_agent.prompts.reviewer_system_prompt import REVIEWER_SYSTEM_PROMPT
 from ii_agent.agents.anthropic_fc import AnthropicFC
 from ii_agent.agents.reviewer import ReviewerAgent
 from ii_agent.utils import WorkspaceManager
@@ -159,10 +160,10 @@ async def async_main():
 
 
     reviewer_agent = ReviewerAgent(
-        system_prompt=SYSTEM_PROMPT,
+        system_prompt=REVIEWER_SYSTEM_PROMPT,
         client=client,
-        workspace_manager=workspace_manager,
         tools=tools,
+        workspace_manager=workspace_manager,
         message_queue=queue,
         logger_for_agent_logs=logger_for_agent_logs,
         context_manager=context_manager,
@@ -209,15 +210,25 @@ async def async_main():
                     None,  # Uses default ThreadPoolExecutor
                     lambda: agent.run_agent(user_input, resume=True),
                 )
+                final_result = ""
+                for message in agent.history._message_lists[::-1]:
+                    message = message[0]
+                    if str(type(message)) == "ToolFormattedResult" and message.tool_name == "message_user":
+                        final_result = message.tool_output
+                        break
                 logger_for_agent_logs.info(f"Agent: {result}")
                 status = await loop.run_in_executor(
                     None,  # Uses default ThreadPoolExecutor
                     lambda: reviewer_agent.run_agent(
                         task=user_input,
+                        result=final_result,
                         workspace_dir=str(workspace_path),
                     ),
                 )
-                review_result = reviewer_agent.history._message_lists[-2][0].text
+                try:
+                    review_result = reviewer_agent.history._message_lists[-1][0].text
+                except:
+                    review_result = reviewer_agent.history._message_lists[-2][0].text
                 logger_for_agent_logs.info(f"Reviewer: {review_result}")
                 
                 # Continue agent with reviewer feedback

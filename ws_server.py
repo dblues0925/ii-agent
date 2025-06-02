@@ -39,6 +39,7 @@ from ii_agent.utils.constants import DEFAULT_MODEL, UPLOAD_FOLDER_NAME
 from utils import parse_common_args, create_workspace_manager_for_connection
 from ii_agent.agents.anthropic_fc import AnthropicFC
 from ii_agent.agents.base import BaseAgent
+from ii_agent.agents.reviewer import ReviewerAgent
 from ii_agent.llm.base import LLMClient
 from ii_agent.utils import WorkspaceManager
 from ii_agent.llm import get_client
@@ -54,6 +55,7 @@ from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.db.manager import DatabaseManager
 from ii_agent.tools import get_system_tools
 from ii_agent.prompts.system_prompt import SYSTEM_PROMPT, SYSTEM_PROMPT_WITH_SEQ_THINKING
+from ii_agent.prompts.reviewer_system_prompt import REVIEWER_SYSTEM_PROMPT
 
 MAX_OUTPUT_TOKENS_PER_TURN = 32000
 MAX_TURNS = 200
@@ -78,6 +80,9 @@ active_connections: Set[WebSocket] = set()
 
 # Active agents for each connection
 active_agents: Dict[WebSocket, BaseAgent] = {}
+
+# Active reviewer agents for each connection
+active_reviewer_agents: Dict[WebSocket, ReviewerAgent] = {}
 
 # Active agent tasks
 active_tasks: Dict[WebSocket, asyncio.Task] = {}
@@ -134,13 +139,15 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     # Create a new agent for this connection
                     tool_args = content.get("tool_args", {})
-                    agent = create_agent_for_connection(
+                    agent, reviewer_agent = create_agent_for_connection(
                         client, session_uuid, workspace_manager, websocket, tool_args
                     )
                     active_agents[websocket] = agent
+                    active_reviewer_agents[websocket] = reviewer_agent
 
-                    # Start message processor for this connection
+                    # Start message processors for both agents
                     message_processor = agent.start_message_processing()
+                    reviewer_message_processor = reviewer_agent.start_message_processing()
                     message_processors[websocket] = message_processor
                     await websocket.send_json(
                         RealtimeEvent(
@@ -401,6 +408,7 @@ async def run_agent_async(
 ):
     """Run the agent asynchronously and send results back to the websocket."""
     agent = active_agents.get(websocket)
+    reviewer_agent = active_reviewer_agents.get(websocket)
 
     if not agent:
         await websocket.send_json(
@@ -417,9 +425,50 @@ async def run_agent_async(
             RealtimeEvent(type=EventType.USER_MESSAGE, content={"text": user_input})
         )
         # Run the agent with the query
-        await anyio.to_thread.run_sync(
+        result = await anyio.to_thread.run_sync(
             agent.run_agent, user_input, files, resume, abandon_on_cancel=True
         )
+        final_result = ""        
+        for message in agent.history._message_lists[::-1]:
+            message = message[0]
+            if str(type(message)) == "ToolFormattedResult" and message.tool_name == "message_user":
+                final_result = message.tool_output
+                break        
+        
+        
+        # Run reviewer agent if available
+        if reviewer_agent:
+            logger.info("Running reviewer agent analysis...")
+            workspace_path = str(agent.workspace_manager.root)
+            
+            review_result = await anyio.to_thread.run_sync(
+                reviewer_agent.run_agent,
+                user_input,
+                final_result,
+                workspace_path,
+                abandon_on_cancel=True
+            )
+            
+            # Get the reviewer feedback from the last message
+            try:
+                review_feedback = reviewer_agent.history._message_lists[-1][0].text
+            except:
+                review_feedback = reviewer_agent.history._message_lists[-2][0].text
+            
+            if review_feedback and review_feedback.strip():
+                logger.info("Feeding reviewer feedback to agent for improvement...")
+                feedback_prompt = f"""Based on the reviewer's analysis, here is the feedback for improvement:
+
+{review_feedback}
+
+Please review this feedback and implement the suggested improvements to better complete the original task: "{user_input}"
+"""
+                
+                # Run agent with reviewer feedback
+                improved_result = await anyio.to_thread.run_sync(
+                    agent.run_agent, feedback_prompt, [], True, abandon_on_cancel=True
+                )
+                logger.info(f"Agent improvement response completed")
 
     except Exception as e:
         logger.error(f"Error running agent: {str(e)}")
@@ -462,6 +511,10 @@ def cleanup_connection(websocket: WebSocket):
     # Remove agent for this connection
     if websocket in active_agents:
         del active_agents[websocket]
+    
+    # Remove reviewer agent for this connection
+    if websocket in active_reviewer_agents:
+        del active_reviewer_agents[websocket]
 
 
 def create_agent_for_connection(
@@ -471,7 +524,7 @@ def create_agent_for_connection(
     websocket: WebSocket,
     tool_args: Dict[str, Any],
 ):
-    """Create a new agent instance for a websocket connection."""
+    """Create a new agent instance and reviewer agent for a websocket connection."""
     global global_args
     device_id = websocket.query_params.get("device_id")
     # Setup logging
@@ -545,7 +598,22 @@ def create_agent_for_connection(
     # Store the session ID in the agent for event tracking
     agent.session_id = session_id
 
-    return agent
+    # Create reviewer agent
+    reviewer_queue = asyncio.Queue()
+    reviewer_agent = ReviewerAgent(
+        system_prompt=REVIEWER_SYSTEM_PROMPT,
+        client=client,
+        tools=tools,
+        workspace_manager=workspace_manager,
+        message_queue=reviewer_queue,
+        logger_for_agent_logs=logger_for_agent_logs,
+        context_manager=context_manager,
+        max_output_tokens_per_turn=MAX_OUTPUT_TOKENS_PER_TURN,
+        max_turns=MAX_TURNS,
+        session_id=session_id,
+    )
+
+    return agent, reviewer_agent
 
 
 def setup_workspace(app, workspace_path):

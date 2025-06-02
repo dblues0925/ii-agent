@@ -19,15 +19,13 @@ from ii_agent.utils.workspace_manager import WorkspaceManager
 class ReviewerAgent(BaseAgent):
     name = "reviewer_agent"
     description = """\
-A reviewer agent that evaluates and reviews the results/websites/slides created by general agent, 
-then suggests improvements for the general agent to make better results.
+A comprehensive reviewer agent that evaluates and reviews the results/websites/slides created by general agent, 
+then provides structured feedback and improvement suggestions.
 
-This agent has access to all tools that general agent has access to and returns a structured JSON response with:
-- summarization: Analysis of how the agent tried to solve the task
-- potential_improvements: Identified improvements to enhance agent capabilities  
-- improvement_proposal: One high-impact improvement described in detail
-- implementation_suggestion: Critical suggestions for implementation
-- problem_description: Task description for implementation
+This agent conducts thorough reviews using structured evaluation criteria and returns a JSON response with:
+- summarization: Comprehensive analysis of approach, tools used, and execution quality
+- implementation_suggestion: Concrete technical suggestions for the most impactful improvement
+- implementation_details: Detailed implementation plan with specific code changes and modifications
 """
     input_schema = {
         "type": "object",
@@ -76,7 +74,7 @@ This agent has access to all tools that general agent has access to and returns 
         self.max_turns = max_turns
 
         self.interrupted = False
-        self.history = MessageHistory()
+        self.history = MessageHistory(context_manager)
         self.context_manager = context_manager
         self.session_id = session_id
 
@@ -148,7 +146,7 @@ This agent has access to all tools that general agent has access to and returns 
     ) -> ToolImplOutput:
         task = tool_input["task"]
         workspace_dir = tool_input["workspace_dir"]
-
+        result = tool_input["result"]
         user_input_delimiter = "-" * 45 + " REVIEWER INPUT " + "-" * 45
         self.logger_for_agent_logs.info(f"\n{user_input_delimiter}\nReviewing agent logs and output...\n")
 
@@ -159,27 +157,37 @@ You have access to all the same tools that the general agent has.
 Here is the task that the general agent is trying to solve:
 {task}
 
+Here is the result of the general agent's execution:
+{result}
+
 Here is the workspace directory of the general agent's execution:
 {workspace_dir}
 
+Now your turn to review the general agent's work.
 """
 
-        review_instruction += """
-Your task is to:
-1. Analyze the workspace directory to understand how the agent tried to solve the task, only check inside this workspace directory, do not check outside of it
-2. Check todo file if it exists, if it does, then you can read file to understand the pipeline of the general agent used to solve the task
-3. Deep dive into other files in the workspace directory to understand the general agent's capabilities and how it tried to solve the task
-4. Analyze and provide feedback to the general agent on how it can improve its capabilities
-5. Generate a structured JSON response
+        review_instruction_ = """
+Your task is to conduct a comprehensive review following these steps:
+
+1. **Context Analysis**: Understand the task complexity, user expectations, and success criteria
+2. **Result Examination**: Check the final result of the general agent's execution (websites, slide decks, documents, etc.)
+   - Use browser tools to visit websites and test functionality
+   - Read slide deck files and evaluate structure/content
+   - Examine any generated documents or code
+3. **Workspace Analysis**: Analyze the workspace directory to understand the agent's approach
+   - Only check inside this workspace directory, do not check outside of it
+   - Check todo file if it exists to understand the pipeline used
+   - Review logs and execution traces for insights
+4. **Quality Assessment**: Evaluate against structured criteria (completeness, accuracy, efficiency, user experience)
+5. **Improvement Identification**: Identify areas where agent capabilities could be enhanced
+6. **Actionable Recommendations**: Generate structured feedback with prioritized improvements
 
 You must respond precisely in the following format including the JSON start and end markers:
 ```json
 {
-    "summarization": "Analyze the logs and summarize how the agent tried to solve the task, noting which tools were used and any issues encountered",
-    "potential_improvements": "Identify potential improvements to enhance the agent's general capabilities (not task-specific fixes)",
-    "improvement_proposal": "Choose ONE high-impact improvement and describe it in detail as a comprehensive enhancement plan",
-    "implementation_suggestion": "Describe what feature or tool could be added/modified to implement the proposed improvement",
-    "problem_description": "Phrase the improvement proposal as a clear task description for a software engineer to implement"
+    "summarization": "A comprehensive analysis of how the agent approached and attempted to solve the task, including tools used, strategies employed, challenges encountered, and overall execution quality",
+    "implementation_suggestion": "Concrete technical suggestions for implementing the most impactful improvement, including whether to modify existing tools, create new ones, or enhance agent capabilities",
+    "implementation_details": "Detailed implementation plan including specific code changes, new tool specifications, configuration updates, or architectural modifications needed to implement the suggested improvement"
 }
 ```"""
 
@@ -229,35 +237,6 @@ You must respond precisely in the following format including the JSON start and 
 
             # Handle tool calls
             pending_tool_calls = self.history.get_pending_tool_calls()
-
-            if len(pending_tool_calls) == 0:
-                # No tools were called, check if we have a JSON response
-                last_response = self.history.get_last_assistant_text_response()
-                
-                if last_response:
-                    # Try to extract JSON from the response
-                    try:
-                        # Look for JSON between ```json and ``` markers
-                        if "```json" in last_response and "```" in last_response:
-                            json_start = last_response.find("```json") + 7
-                            json_end = last_response.find("```", json_start)
-                            json_str = last_response[json_start:json_end].strip()
-                            
-                            # Parse to validate JSON
-                            json.loads(json_str)
-                            
-                            self.logger_for_agent_logs.info("Reviewer completed with JSON response")
-                            return ToolImplOutput(
-                                tool_output=json_str,
-                                tool_result_message="Review completed successfully"
-                            )
-                    except Exception as e:
-                        self.logger_for_agent_logs.warning(f"Failed to parse JSON response: {e}")
-                
-                # If no response, JSON parsing failed, or no tools were called, prompt for JSON
-                reminder = "Please provide your review in the exact JSON format specified in the instructions, including the ```json and ``` markers."
-                self.history.add_user_prompt(reminder)
-                continue
 
             if len(pending_tool_calls) > 1:
                 raise ValueError("Only one tool call per turn is supported")
@@ -333,6 +312,7 @@ You must respond precisely in the following format including the JSON start and 
     def run_agent(
         self,
         task: str,
+        result: str,
         workspace_dir: str,
         resume: bool = False,
     ) -> str:
@@ -356,6 +336,7 @@ You must respond precisely in the following format including the JSON start and 
         tool_input = {
             "task": task,
             "workspace_dir": workspace_dir,
+            "result": result,
         }
         return self.run(tool_input, self.history)
 
