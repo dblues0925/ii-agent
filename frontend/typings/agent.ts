@@ -4,6 +4,14 @@ export enum TAB {
   TERMINAL = "terminal",
 }
 
+export const AVAILABLE_MODELS = [
+  "claude-3-7-sonnet@20250219",
+  "claude-sonnet-4@20250514",
+  "claude-opus-4@20250514",
+  "gemini-2.5-pro-preview-05-06",
+  "gpt-4.1",
+];
+
 export type Source = {
   title: string;
   url: string;
@@ -52,6 +60,9 @@ export enum TOOL {
   DEEP_RESEARCH = "deep_research",
   LIST_HTML_LINKS = "list_html_links",
   RETURN_CONTROL_TO_USER = "return_control_to_user",
+  SLIDE_DECK_INIT = "slide_deck_init",
+  SLIDE_DECK_COMPLETE = "slide_deck_complete",
+
   // browser tools
   BROWSER_VIEW = "browser_view",
   BROWSER_NAVIGATION = "browser_navigation",
@@ -125,4 +136,23 @@ export interface IEvent {
   };
   timestamp: string;
   workspace_dir: string;
+}
+
+export interface ToolSettings {
+  deep_research: boolean;
+  pdf: boolean;
+  media_generation: boolean;
+  audio_generation: boolean;
+  browser: boolean;
+}
+export interface GooglePickerResponse {
+  action: string;
+  docs?: Array<GoogleDocument>;
+}
+
+export interface GoogleDocument {
+  id: string;
+  name: string;
+  thumbnailUrl: string;
+  mimeType: string;
 }
