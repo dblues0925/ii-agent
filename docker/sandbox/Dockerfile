@@ -6,3 +6,5 @@ RUN apt-get update && apt-get install -y \
     lsof \
     git \
     net-tools
+
+RUN echo 'export PS1="[CMD_BEGIN]\\n\\u@\\h:\\w\\n[CMD_END]"; export PS2=""' >> /root/.bashrc

@@ -9,14 +9,15 @@ from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
 from ii_agent.tools.presentation_tool import PresentationTool
 from ii_agent.tools.register_deployment import RegisterDeploymentTool
+from ii_agent.tools.shell_tools import ShellExecTool, ShellViewTool, ShellWaitTool
 from ii_agent.tools.static_deploy_tool import StaticDeployTool
+from ii_agent.tools.terminal_manager import PexpectSessionManager
 from ii_agent.tools.web_search_tool import WebSearchTool
 from ii_agent.tools.visit_webpage_tool import VisitWebpageTool
 from ii_agent.tools.str_replace_tool_relative import StrReplaceEditorTool
 from ii_agent.tools.sequential_thinking_tool import SequentialThinkingTool
 from ii_agent.tools.message_tool import MessageTool
 from ii_agent.tools.complete_tool import CompleteTool, ReturnControlToUserTool
-from ii_agent.tools.bash_tool import create_bash_tool, create_docker_bash_tool
 from ii_agent.browser.browser import Browser
 from ii_agent.utils import WorkspaceManager
 from ii_agent.llm.message_history import MessageHistory
@@ -61,15 +62,7 @@ def get_system_tools(
     Returns:
         list[LLMTool]: A list of all system tools.
     """
-    if container_id is not None:
-        bash_tool = create_docker_bash_tool(
-            container=container_id, ask_user_permission=ask_user_permission
-        )
-    else:
-        bash_tool = create_bash_tool(
-            ask_user_permission=ask_user_permission, cwd=workspace_manager.root
-        )
-
+    session_manager = PexpectSessionManager(container_id=container_id)
     tools = [
         MessageTool(),
         WebSearchTool(),
@@ -77,7 +70,9 @@ def get_system_tools(
         StrReplaceEditorTool(
             workspace_manager=workspace_manager, message_queue=message_queue
         ),
-        bash_tool,
+        ShellExecTool(session_manager=session_manager),
+        ShellViewTool(session_manager=session_manager),
+        ShellWaitTool(session_manager=session_manager),
         ListHtmlLinksTool(workspace_manager=workspace_manager),
         PresentationTool(
             client=client,
