@@ -5,9 +5,9 @@ from ii_agent.sandbox.config import SandboxSettings
 
 def get_home_directory(user_docker_container: bool) -> str:
     if user_docker_container:
-        return "/home/ubuntu"
+        return SandboxSettings().work_dir
     else:
-        return SandboxSettings.work_dir
+        return "/home/ubuntu"
 
 
 def get_deploy_rules(user_docker_container: bool) -> str:
@@ -17,9 +17,10 @@ def get_deploy_rules(user_docker_container: bool) -> str:
 - If a port is already in use, you must use the next available port
 - Before all deployment, use register_deployment tool to register your service
 - Present the public url/base path to the user after deployment
-- If you are using backend like flask, django, allow all CORS and CSRFs, this will help you to deploy your service seamlessly
+- When starting services, must listen on 0.0.0.0, avoid binding to specific IP addresses or Host headers to ensure user accessibility.
+- Configure CORS to accept requests from any origin
 - Register your service with the register_deployment tool before you start to testing or deploying your service
-- After deployment, use browser tool to quickly test the service with the public url, update your plan accordingly if the service is not functional
+- After deployment, use browser tool to quickly test the service with the public url, update your plan accordingly and fix the error if the service is not functional
 </deploy_rules>"""
     else:
         return """<deploy_rules>
