@@ -1,5 +1,13 @@
 from datetime import datetime
 import platform
+from ii_agent.sandbox.config import SandboxSettings
+
+
+def get_home_directory(user_docker_container: bool) -> str:
+    if user_docker_container:
+        return "/home/ubuntu"
+    else:
+        return SandboxSettings.work_dir
 
 
 def get_deploy_rules(user_docker_container: bool) -> str:
@@ -11,6 +19,7 @@ def get_deploy_rules(user_docker_container: bool) -> str:
 - Present the public url/base path to the user after deployment
 - If you are using backend like flask, django, allow all CORS and CSRFs, this will help you to deploy your service seamlessly
 - Register your service with the register_deployment tool before you start to testing or deploying your service
+- After deployment, use browser tool to quickly test the service with the public url, update your plan accordingly if the service is not functional
 </deploy_rules>"""
     else:
         return """<deploy_rules>
@@ -240,7 +249,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: `ubuntu`, with sudo privileges
-- Home directory: /home/ubuntu
+- Home directory: {get_home_directory(user_docker_container)}
 
 Development Environment:
 - Python 3.10.12 (commands: python3, pip3)
@@ -469,7 +478,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: `ubuntu`, with sudo privileges
-- Home directory: /home/ubuntu
+- Home directory: {get_home_directory(user_docker_container)}
 
 Development Environment:
 - Python 3.10.12 (commands: python3, pip3)
