@@ -102,16 +102,15 @@ class GeminiDirectClient(LLMClient):
             
             gemini_messages.append(types.Content(role=role, parts=message_content_list))
         
-        tool_params = []
-        for tool in tools:
-            tool_params.append(
-                {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.input_schema,
-                }
-            )
-        tool_params = types.Tool(function_declarations=tool_params)
+        tool_declarations = [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.input_schema,
+            }
+            for tool in tools
+        ]
+        tool_params = [types.Tool(function_declarations=tool_declarations)] if tool_declarations else None
 
         mode = None
         if not tool_choice:
@@ -128,7 +127,7 @@ class GeminiDirectClient(LLMClient):
                 response = self.client.models.generate_content(
                     model=self.model_name,
                     config=types.GenerateContentConfig(
-                        tools=[tool_params],
+                        tools=tool_params,
                         system_instruction=system_prompt,
                         temperature=temperature,
                         max_output_tokens=max_tokens,
