@@ -50,13 +50,13 @@ class ShellExecTool(LLMTool):
         )
         if result.success:
             return ToolImplOutput(
-                f"Command {command} executed successfully in session {session_id}",
                 result.output,
+                f"Command {command} executed successfully in session {session_id}",
             )
         else:
             return ToolImplOutput(
-                f"Failed to execute command {command} in session {session_id}: {result.output}",
                 result.output,
+                f"Failed to execute command {command} in session {session_id}: {result.output}",
             )
 
 
@@ -91,13 +91,13 @@ class ShellViewTool(LLMTool):
         result = self.session_manager.shell_view(session_id)
         if result.success:
             return ToolImplOutput(
-                f"View of session {session_id} retrieved successfully",
                 result.output,
+                f"View of session {session_id} retrieved successfully",
             )
         else:
             return ToolImplOutput(
-                f"Failed to retrieve view of session {session_id}: {result.output}",
                 result.output,
+                f"Failed to retrieve view of session {session_id}: {result.output}",
             )
 
 
@@ -147,16 +147,5 @@ class ShellWaitTool(LLMTool):
 
     if __name__ == "__main__":
         session_manager = PexpectSessionManager(container_id="f85f9314eb4b")
-        result = session_manager.shell_exec(
-            "session_1", "echo Hello && sleep 5 && echo World && sleep 3", timeout=5
-        )
-        print(result.output)
-        result = session_manager.shell_exec("session_2", "ls", timeout=5)
-        print(result.output)
-        result = session_manager.shell_exec("session_1", "ls", timeout=5)
-        print(result.output)
-        session_manager.shell_wait("session_1", 3)
-        result = session_manager.shell_exec("session_1", "ls", timeout=5)
-        print(result.output)
+        result = session_manager.shell_exec("session_1", "ls", exec_dir="/", timeout=5)
         result = session_manager.shell_view("session_1")
-        print(result.output)

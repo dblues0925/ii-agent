@@ -5,10 +5,6 @@ import platform
 def get_deploy_rules(user_docker_container: bool) -> str:
     if user_docker_container:
         return """<deploy_rules>
-- IMPORTANT: You must use nohup to  deploy services in the background and > /dev/null 2>&1 &
-- Do not mix other command with your deploy command, run the deploy command in isolation
-- For example:
-nohup bash some deploy command  & > /dev/null 2>&1 &
 - You have access to all ports 10000-10099, you can deploy as many services as you want
 - If a port is already in use, you must use the next available port
 - Before all deployment, use register_deployment tool to register your service
@@ -147,6 +143,8 @@ You are operating in an agent loop, iteratively completing tasks through these s
 
 <shell_rules>
 - Avoid commands requiring confirmation; actively use -y or -f flags for automatic confirmation
+- You can use shell_view tool to check the output of the command
+- You can use shell_wait tool to wait for a command to finish
 - Avoid commands with excessive output; save to files when necessary
 - Chain multiple commands with && operator to minimize interruptions
 - Use pipe operator to pass command outputs, simplifying operations

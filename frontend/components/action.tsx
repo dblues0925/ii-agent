@@ -21,6 +21,7 @@ import {
   Video,
   Presentation,
   Unplug,
+  Eye,
 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 
@@ -53,8 +54,12 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
       case TOOL.VISIT:
       case TOOL.BROWSER_USE:
         return <Globe className={className} />;
-      case TOOL.BASH:
+      case TOOL.SHELL_EXEC:
         return <Terminal className={className} />;
+      case TOOL.SHELL_VIEW:
+        return <Eye className={className} />;
+      case TOOL.SHELL_WAIT:
+        return <LoaderCircle className={className} />;
       case TOOL.STR_REPLACE_EDITOR:
         return <Code className={className} />;
       case TOOL.STATIC_DEPLOY:
@@ -120,8 +125,12 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
       case TOOL.VISIT:
       case TOOL.BROWSER_USE:
         return "Browsing";
-      case TOOL.BASH:
+      case TOOL.SHELL_EXEC:
         return "Executing Command";
+      case TOOL.SHELL_VIEW:
+        return "Viewing Shell";
+      case TOOL.SHELL_WAIT:
+        return "Waiting for Shell";
       case TOOL.STR_REPLACE_EDITOR:
         return value?.tool_input?.command === "create"
           ? "Creating File"
@@ -192,8 +201,12 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return value.tool_input?.url;
       case TOOL.BROWSER_USE:
         return value.tool_input?.url;
-      case TOOL.BASH:
+      case TOOL.SHELL_EXEC:
         return value.tool_input?.command;
+      case TOOL.SHELL_VIEW:
+        return value.tool_input?.session_id;
+      case TOOL.SHELL_WAIT:
+        return value.tool_input?.seconds + " seconds";
       case TOOL.STR_REPLACE_EDITOR:
         return value.tool_input?.path === workspaceInfo
           ? workspaceInfo

@@ -1,6 +1,7 @@
 import pexpect
 import time
 import logging
+import re
 from typing import Dict, Optional, List
 from dataclasses import dataclass, field
 from enum import Enum
@@ -55,6 +56,16 @@ class PexpectSessionManager:
         self.end_pattern = r"\[CMD_END\]"
         self.base_cmd = None
         self.container_id = container_id
+        # ANSI escape sequence regex pattern
+        self.ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+
+    def _clean_ansi_escape_sequences(self, text: str) -> str:
+        """Remove ANSI escape sequences from text"""
+        clean_text = self.ansi_escape.sub("", text)
+        # Remove carriage return if it's at the beginning
+        if clean_text.startswith("\r"):
+            clean_text = clean_text[1:]
+        return clean_text
 
     def _extract_current_directory_from_prompt(
         self, prompt_output: str
@@ -85,6 +96,9 @@ class PexpectSessionManager:
         Returns:
             Formatted output string
         """
+        # Clean ANSI escape sequences from raw output
+        raw_output = self._clean_ansi_escape_sequences(raw_output)
+
         # Split the raw output to separate command output from the new prompt
         new_directory = None
         if "[CMD_BEGIN]" in raw_output:
@@ -345,10 +359,67 @@ class PexpectSessionManager:
     def shell_write_to_process(
         self, id: str, input_text: str, press_enter: bool = False
     ) -> SessionResult:
-        pass
+        """
+        Write text to a running process in a shell session
+
+        Args:
+            id: Session identifier
+            input_text: Text to write to the process
+            press_enter: Whether to press enter after writing the text
+
+        Returns:
+            SessionResult containing success status and output
+        """
+        session = self.sessions.get(id)
+        if not session:
+            return SessionResult(success=False, output=f"Session {id} not found")
+
+        if not session.child:
+            return SessionResult(
+                success=False, output=f"No active process in session {id}"
+            )
+
+        try:
+            # Write the input text to the process
+            if press_enter:
+                session.child.sendline(input_text)
+            else:
+                session.child.send(input_text)
+
+            # Give the process a moment to process the input
+            time.sleep(0.1)
+
+            # Try to get any immediate output without blocking
+            try:
+                session.child.read_nonblocking(size=1000, timeout=0.5)
+            except (pexpect.TIMEOUT, pexpect.EOF):
+                # No immediate output or process ended, which is fine
+                pass
+
+            return SessionResult(
+                success=True,
+                output=f"Successfully wrote input to process in session {id}",
+            )
+
+        except Exception as e:
+            logger.error(f"Error writing to process in session {id}: {str(e)}")
+            return SessionResult(
+                success=False, output=f"Error writing to process: {str(e)}"
+            )
 
     def shell_kill_process(self, id: str) -> SessionResult:
-        pass
-
-    def cleanup_session(self, id: str) -> SessionResult:
-        pass
+        if id not in self.sessions:
+            return SessionResult(success=False, output=f"Session {id} not found")
+        session = self.sessions[id]
+        if session.child:
+            try:
+                session.child.kill(9)  # SIGKILL
+                session.child.close()
+                session.child = None
+                self.sessions.pop(id)
+            except Exception as e:
+                logger.error(f"Error killing process in session {id}: {str(e)}")
+                return SessionResult(
+                    success=False, output=f"Error killing process: {str(e)}"
+                )
+        return SessionResult(success=True, output=f"Killed process in session {id}")

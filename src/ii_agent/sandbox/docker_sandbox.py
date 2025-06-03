@@ -34,7 +34,9 @@ class DockerSandbox:
             volume_bindings: Volume mappings in {host_path: container_path} format.
         """
         self.container_name = container_name
-        self.config = config
+        self.config = (
+            config or SandboxSettings()
+        )  # Use default SandboxSettings if config is None
         self.volume_bindings = volume_bindings or {}
         self.client = docker.from_env()
         self.container: Optional[Container] = None
@@ -75,12 +77,14 @@ class DockerSandbox:
             container = await asyncio.to_thread(
                 self.client.api.create_container,
                 image=self.config.image,
-                command="tail -f /dev/null",
+                command="/bin/bash -l -c 'tail -f /dev/null'",
                 hostname="sandbox",
                 working_dir=self.config.work_dir,
                 host_config=host_config,
                 name=self.container_name,
-                labels={"com.docker.compose.project":os.getenv("COMPOSE_PROJECT_NAME")},
+                labels={
+                    "com.docker.compose.project": os.getenv("COMPOSE_PROJECT_NAME")
+                },
                 tty=True,
                 detach=True,
                 stdin_open=True,  # Enable interactive mode
@@ -163,6 +167,7 @@ class DockerSandbox:
 
 
 if __name__ == "__main__":
+
     async def main():
         sandbox = DockerSandbox(uuid.uuid4().hex)
         await sandbox.create()
