@@ -230,6 +230,7 @@ export default function Home() {
           break;
 
         case TOOL.IMAGE_GENERATE:
+        case TOOL.IMAGE_SEARCH:
         case TOOL.BROWSER_USE:
         case TOOL.VISIT:
           setActiveTab(TAB.BROWSER);
@@ -720,7 +721,8 @@ export default function Home() {
           if (
             data.content.tool_name !== TOOL.SEQUENTIAL_THINKING &&
             data.content.tool_name !== TOOL.PRESENTATION &&
-            data.content.tool_name !== TOOL.MESSAGE_USER
+            data.content.tool_name !== TOOL.MESSAGE_USER &&
+            data.content.tool_name !== TOOL.RETURN_CONTROL_TO_USER
           ) {
             // TODO: Implement helper function to handle tool results
             setMessages((prev) => {
@@ -1190,15 +1192,30 @@ export default function Home() {
                   />
                   <ImageBrowser
                     className={
-                      activeTab === TAB.BROWSER &&
-                      currentActionData?.type === TOOL.IMAGE_GENERATE
+                      (activeTab === TAB.BROWSER &&
+                        currentActionData?.type === TOOL.IMAGE_GENERATE) ||
+                      currentActionData?.type === TOOL.IMAGE_SEARCH
                         ? ""
                         : "hidden"
                     }
-                    url={currentActionData?.data.tool_input?.output_filename}
-                    image={getRemoteURL(
-                      currentActionData?.data.tool_input?.output_filename
-                    )}
+                    url={
+                      currentActionData?.data.tool_input?.output_filename ||
+                      currentActionData?.data.tool_input?.query
+                    }
+                    images={
+                      currentActionData?.type === TOOL.IMAGE_SEARCH
+                        ? parseJson(
+                            currentActionData?.data?.result as string
+                          )?.map(
+                            (item: { image_url: string }) => item?.image_url
+                          )
+                        : [
+                            getRemoteURL(
+                              currentActionData?.data.tool_input
+                                ?.output_filename
+                            ),
+                          ]
+                    }
                   />
                   <CodeEditor
                     currentActionData={currentActionData}
