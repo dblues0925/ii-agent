@@ -145,6 +145,45 @@ class ShellWaitTool(LLMTool):
                 result.output,
             )
 
+
+class ShellKillProcessTool(LLMTool):
+    """Tool for killing a process in a shell session"""
+
+    name = "shell_kill_process"
+    description = "Terminate a running process in a specified shell session. Use for stopping long-running processes or handling frozen commands."
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "session_id": {
+                "type": "string",
+                "description": "Unique identifier of the target shell session",
+            },
+        },
+        "required": ["session_id"],
+    }
+
+    def __init__(self, session_manager: PexpectSessionManager):
+        super().__init__()
+        self.session_manager = session_manager
+
+    def run_impl(
+        self,
+        tool_input: dict[str, Any],
+        message_history: Optional[MessageHistory] = None,
+    ) -> ToolImplOutput:
+        session_id = tool_input["session_id"]
+        result = self.session_manager.shell_kill_process(session_id)
+        if result.success:
+            return ToolImplOutput(
+                result.output,
+                f"Successfully killed process in session {session_id}",
+            )
+        else:
+            return ToolImplOutput(
+                result.output,
+                f"Failed to kill process in session {session_id}: {result.output}",
+            )
+
     if __name__ == "__main__":
         session_manager = PexpectSessionManager(container_id="f85f9314eb4b")
         result = session_manager.shell_exec("session_1", "ls", exec_dir="/", timeout=5)

@@ -10,7 +10,12 @@ from ii_agent.tools.advanced_tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
 from ii_agent.tools.register_deployment import RegisterDeploymentTool
-from ii_agent.tools.shell_tools import ShellExecTool, ShellViewTool, ShellWaitTool
+from ii_agent.tools.shell_tools import (
+    ShellExecTool,
+    ShellViewTool,
+    ShellWaitTool,
+    ShellKillProcessTool,
+)
 from ii_agent.tools.static_deploy_tool import StaticDeployTool
 from ii_agent.tools.terminal_manager import PexpectSessionManager
 from ii_agent.tools.memory.compactify_memory import CompactifyMemoryTool
@@ -86,6 +91,7 @@ def get_system_tools(
         ShellExecTool(session_manager=session_manager),
         ShellViewTool(session_manager=session_manager),
         ShellWaitTool(session_manager=session_manager),
+        ShellKillProcessTool(session_manager=session_manager),
         ListHtmlLinksTool(workspace_manager=workspace_manager),
         SlideDeckInitTool(
             workspace_manager=workspace_manager,

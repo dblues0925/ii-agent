@@ -46,6 +46,7 @@ export enum TOOL {
   IMAGE_SEARCH = "image_search",
   VISIT = "visit_webpage",
   SHELL_EXEC = "shell_exec",
+  SHELL_KILL_PROCESS = "shell_kill_process",
   SHELL_VIEW = "shell_view",
   SHELL_WAIT = "shell_wait",
   BASH = "bash",

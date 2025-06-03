@@ -22,6 +22,7 @@ import {
   Presentation,
   Unplug,
   Eye,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 
@@ -56,6 +57,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return <Globe className={className} />;
       case TOOL.SHELL_EXEC:
         return <Terminal className={className} />;
+      case TOOL.SHELL_KILL_PROCESS:
+        return <X className={className} />;
       case TOOL.SHELL_VIEW:
         return <Eye className={className} />;
       case TOOL.SHELL_WAIT:
@@ -127,6 +130,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return "Browsing";
       case TOOL.SHELL_EXEC:
         return "Executing Command";
+      case TOOL.SHELL_KILL_PROCESS:
+        return "Killing Process";
       case TOOL.SHELL_VIEW:
         return "Viewing Shell";
       case TOOL.SHELL_WAIT:
@@ -203,6 +208,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return value.tool_input?.url;
       case TOOL.SHELL_EXEC:
         return value.tool_input?.command;
+      case TOOL.SHELL_KILL_PROCESS:
+        return value.tool_input?.session_id;
       case TOOL.SHELL_VIEW:
         return value.tool_input?.session_id;
       case TOOL.SHELL_WAIT:
