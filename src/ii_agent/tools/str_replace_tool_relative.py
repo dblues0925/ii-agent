@@ -333,7 +333,11 @@ Notes for using the `str_replace` command:\n
             else:
                 output = f"stderr: {stderr}\nstdout: {stdout}\n"
             return ExtendedToolImplOutput(
-                output, "Listed directory contents", {"success": not stderr}
+                output.replace(
+                    "/app/workspace/" + self.workspace_manager.root.name, "/workspace"
+                ),
+                "Listed directory contents",
+                {"success": not stderr},  # Quick fix for the path issue
             )
 
         file_content = self.read_file(path)
