@@ -48,6 +48,7 @@ export enum TOOL {
   SHELL_EXEC = "shell_exec",
   SHELL_KILL_PROCESS = "shell_kill_process",
   SHELL_VIEW = "shell_view",
+  SHELL_WRITE_TO_PROCESS = "shell_write_to_process",
   SHELL_WAIT = "shell_wait",
   BASH = "bash",
   COMPLETE = "complete",
@@ -102,6 +103,8 @@ export type ActionStep = {
       key?: string;
       session_id?: string;
       seconds?: number;
+      input?: string;
+      enter?: boolean;
     };
     result?: string | Record<string, unknown>;
     query?: string;

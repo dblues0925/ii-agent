@@ -57,6 +57,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return <Globe className={className} />;
       case TOOL.SHELL_EXEC:
         return <Terminal className={className} />;
+      case TOOL.SHELL_WRITE_TO_PROCESS:
+        return <Terminal className={className} />;
       case TOOL.SHELL_KILL_PROCESS:
         return <X className={className} />;
       case TOOL.SHELL_VIEW:
@@ -130,6 +132,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return "Browsing";
       case TOOL.SHELL_EXEC:
         return "Executing Command";
+      case TOOL.SHELL_WRITE_TO_PROCESS:
+        return "Writing to terminal";
       case TOOL.SHELL_KILL_PROCESS:
         return "Killing Process";
       case TOOL.SHELL_VIEW:
@@ -208,6 +212,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return value.tool_input?.url;
       case TOOL.SHELL_EXEC:
         return value.tool_input?.command;
+      case TOOL.SHELL_WRITE_TO_PROCESS:
+        return value.tool_input?.input;
       case TOOL.SHELL_KILL_PROCESS:
         return value.tool_input?.session_id;
       case TOOL.SHELL_VIEW:
