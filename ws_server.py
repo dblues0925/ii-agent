@@ -106,7 +106,7 @@ def map_model_name_to_client(model_name: str, ws_content: Dict[str, Any]) -> LLM
             use_caching=False,
             project_id=global_args.project_id,
             region=global_args.region,
-            thinking_tokens=ws_content.get("thinking_tokens", 10000),
+            thinking_tokens=ws_content['tool_args']['thinking_tokens'],
         )
     elif "gemini" in model_name:
         return get_client(
