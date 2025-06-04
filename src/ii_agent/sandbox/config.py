@@ -5,6 +5,7 @@ class SandboxSettings(BaseModel):
     """Configuration for the execution sandbox"""
 
     image: str = Field("sandbox", description="Base image")
+    system_shell: str = Field("system_shell", description="System shell")
     work_dir: str = Field("/workspace", description="Container working directory")
     memory_limit: str = Field("1024mb", description="Memory limit")
     cpu_limit: float = Field(1.0, description="CPU limit")

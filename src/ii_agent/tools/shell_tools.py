@@ -184,6 +184,57 @@ class ShellKillProcessTool(LLMTool):
                 f"Failed to kill process in session {session_id}: {result.output}",
             )
 
+
+class ShellWriteToProcessTool(LLMTool):
+    """Tool for writing to a process in a shell session"""
+
+    name = "shell_write_to_process"
+    description = "Write to a process in a specified shell session. Use for interacting with running processes."
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "session_id": {
+                "type": "string",
+                "description": "Unique identifier of the target shell session",
+            },
+            "input": {
+                "type": "string",
+                "description": "Text to write to the process",
+            },
+            "enter": {
+                "type": "boolean",
+                "description": "Whether to press enter after writing the text",
+            },
+        },
+        "required": ["session_id", "input", "enter"],
+    }
+
+    def __init__(self, session_manager: PexpectSessionManager):
+        super().__init__()
+        self.session_manager = session_manager
+
+    def run_impl(
+        self,
+        tool_input: dict[str, Any],
+        message_history: Optional[MessageHistory] = None,
+    ) -> ToolImplOutput:
+        session_id = tool_input["session_id"]
+        input_text = tool_input["input"]
+        enter = tool_input["enter"]
+        result = self.session_manager.shell_write_to_process(
+            session_id, input_text, enter
+        )
+        if result.success:
+            return ToolImplOutput(
+                result.output,
+                f"Successfully wrote to process in session {session_id}",
+            )
+        else:
+            return ToolImplOutput(
+                result.output,
+                f"Failed to write to process in session {session_id}: {result.output}",
+            )
+
     if __name__ == "__main__":
         session_manager = PexpectSessionManager(container_id="f85f9314eb4b")
         result = session_manager.shell_exec("session_1", "ls", exec_dir="/", timeout=5)

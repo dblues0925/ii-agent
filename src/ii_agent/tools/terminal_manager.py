@@ -312,7 +312,7 @@ class PexpectSessionManager:
         ):
             return SessionResult(
                 success=True,
-                output="".join(session.history) + f"\n{session.current_directory}$",
+                output="\n".join(session.history) + f"\n{session.current_directory}$",
             )
         else:
             try:
@@ -325,7 +325,8 @@ class PexpectSessionManager:
                 session.history.append(formatted_output)
                 return SessionResult(
                     success=True,
-                    output="".join(session.history) + f"\n{session.current_directory}$",
+                    output="\n".join(session.history)
+                    + f"\n{session.current_directory}$",
                 )
             except pexpect.exceptions.TIMEOUT:
                 session.state = SessionState.RUNNING
@@ -334,7 +335,7 @@ class PexpectSessionManager:
                     raw_output, session.last_command, session, 1, True
                 )
                 return SessionResult(
-                    success=True, output="".join(session.history + [formatted_output])
+                    success=True, output="\n".join(session.history + [formatted_output])
                 )
 
     def shell_wait(self, id: str, seconds: int = 30) -> str:
@@ -388,24 +389,26 @@ class PexpectSessionManager:
 
             # Give the process a moment to process the input
             time.sleep(0.1)
-
-            # Try to get any immediate output without blocking
-            try:
-                session.child.read_nonblocking(size=1000, timeout=0.5)
-            except (pexpect.TIMEOUT, pexpect.EOF):
-                # No immediate output or process ended, which is fine
-                pass
+            session.child.expect(self.end_pattern, timeout=3)
+            session.state = SessionState.COMPLETED
+            final_output = session.child.before
+            formatted_output = self._format_output(
+                final_output, session.last_command, session, 3
+            )
+            session.history.append(formatted_output)
 
             return SessionResult(
                 success=True,
-                output=f"Successfully wrote input to process in session {id}",
+                output=formatted_output + f"\n{session.current_directory}$",
             )
 
-        except Exception as e:
-            logger.error(f"Error writing to process in session {id}: {str(e)}")
-            return SessionResult(
-                success=False, output=f"Error writing to process: {str(e)}"
+        except pexpect.exceptions.TIMEOUT:
+            session.state = SessionState.RUNNING
+            raw_output = session.child.before
+            formatted_output = self._format_output(
+                raw_output, session.last_command, session, 3
             )
+            return SessionResult(success=False, output=formatted_output)
 
     def shell_kill_process(self, id: str) -> SessionResult:
         if id not in self.sessions:

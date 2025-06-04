@@ -15,6 +15,7 @@ from ii_agent.tools.shell_tools import (
     ShellViewTool,
     ShellWaitTool,
     ShellKillProcessTool,
+    ShellWriteToProcessTool,
 )
 from ii_agent.tools.static_deploy_tool import StaticDeployTool
 from ii_agent.tools.terminal_manager import PexpectSessionManager
@@ -91,10 +92,12 @@ def get_system_tools(
         ShellExecTool(session_manager=session_manager),
         ShellViewTool(session_manager=session_manager),
         ShellWaitTool(session_manager=session_manager),
+        ShellWriteToProcessTool(session_manager=session_manager),
         ShellKillProcessTool(session_manager=session_manager),
         ListHtmlLinksTool(workspace_manager=workspace_manager),
         SlideDeckInitTool(
             workspace_manager=workspace_manager,
+            session_manager=session_manager,
         ),
         SlideDeckCompleteTool(
             workspace_manager=workspace_manager,
