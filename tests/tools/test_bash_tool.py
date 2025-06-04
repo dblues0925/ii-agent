@@ -28,7 +28,7 @@ def bash_tool():
     )
 
 
-def test_successful_command():
+async def test_successful_command():
     """Test that a successful command returns the expected output."""
     bash_tool = BashTool(
         workspace_root=Path("/tmp"),
@@ -38,7 +38,7 @@ def test_successful_command():
         # Mock a successful command execution
         mock_run_command.return_value = "Command output"
 
-        result = bash_tool.run_impl({"command": "echo hello"})
+        result = await bash_tool.run_impl({"command": "echo hello"})
 
         assert result.tool_output == "Command output"
         assert result.tool_result_message == "Command 'echo hello' executed."
@@ -49,7 +49,7 @@ def test_successful_command():
         }
 
 
-def test_failed_command():
+async def test_failed_command():
     """Test that a failed command returns the appropriate error."""
     bash_tool = BashTool(
         workspace_root=Path("/tmp"),
@@ -59,7 +59,7 @@ def test_failed_command():
         # Mock a failed command execution that raises an exception
         mock_run_command.side_effect = Exception("Command failed")
 
-        result = bash_tool.run_impl({"command": "invalid_command"})
+        result = await bash_tool.run_impl({"command": "invalid_command"})
 
         # Check the result
         assert "Error executing command: Command failed" == result.tool_output
@@ -74,7 +74,7 @@ def test_failed_command():
         }
 
 
-def test_command_with_exception():
+async def test_command_with_exception():
     """Test that an exception during command execution is handled properly."""
     bash_tool = BashTool(
         workspace_root=Path("/tmp"),
@@ -84,7 +84,7 @@ def test_command_with_exception():
         # Mock an exception during command execution
         mock_run_command.side_effect = Exception("Test exception")
 
-        result = bash_tool.run_impl({"command": "echo hello"})
+        result = await bash_tool.run_impl({"command": "echo hello"})
 
         # Check the result
         assert "Error executing command: Test exception" == result.tool_output
@@ -97,17 +97,17 @@ def test_command_with_exception():
         }
 
 
-def test_get_tool_start_message():
+async def test_get_tool_start_message():
     """Test that the tool start message is formatted correctly."""
     bash_tool = BashTool(
         workspace_root=Path("/tmp"),
         require_confirmation=False,
     )
-    message = bash_tool.get_tool_start_message({"command": "echo hello"})
+    message = await bash_tool.get_tool_start_message({"command": "echo hello"})
     assert message == "Executing bash command: echo hello"
 
 
-def test_directory_change_persistence():
+async def test_directory_change_persistence():
     """Test that directory changes persist between commands and affect subsequent operations."""
     # Create a temporary directory for testing
     import tempfile
@@ -126,22 +126,22 @@ def test_directory_change_persistence():
         )
 
         # First command: cd into the subdirectory
-        result1 = bash_tool.run_impl({"command": f"cd {test_dir.name} && pwd"})
+        result1 = await bash_tool.run_impl({"command": f"cd {test_dir.name} && pwd"})
         assert "test_dir" in result1.tool_output
         assert result1.auxiliary_data["success"] is True
 
         # Second command: try to list the directory from current location
-        result2 = bash_tool.run_impl({"command": "ls -la"})
+        result2 = await bash_tool.run_impl({"command": "ls -la"})
         assert "test.txt" in result2.tool_output
         assert result2.auxiliary_data["success"] is True
 
         # Third command: try to access the directory from parent
-        result3 = bash_tool.run_impl({"command": f"cd .. && ls -la {test_dir.name}"})
+        result3 = await bash_tool.run_impl({"command": f"cd .. && ls -la {test_dir.name}"})
         assert "test.txt" in result3.tool_output
         assert result3.auxiliary_data["success"] is True
 
         # Fourth command: verify we're in parent directory
-        result4 = bash_tool.run_impl({"command": "pwd"})
+        result4 = await bash_tool.run_impl({"command": "pwd"})
         print("Output: ", result4.tool_output)
         assert (
             str(test_dir.parent) in result4.tool_output
@@ -459,7 +459,7 @@ class StartPersistentShellTest(unittest.TestCase):
         mock_child.expect.assert_called_once()
 
 
-def test_command_with_timeout():
+async def test_command_with_timeout():
     """Test that timeouts are handled properly and we can run subsequent commands."""
     bash_tool = BashTool(
         workspace_root=Path("/tmp"),
@@ -467,12 +467,12 @@ def test_command_with_timeout():
         timeout=5,
     )
 
-    output = bash_tool.run_impl({"command": "sleep 10"})
+    output = await bash_tool.run_impl({"command": "sleep 10"})
     assert output.tool_output == "Command timed out. Please try again."
     assert output.tool_result_message == "Command timed out. Please try again."
     assert not output.auxiliary_data["success"]
 
-    output = bash_tool.run_impl({"command": "echo hello"})
+    output = await bash_tool.run_impl({"command": "echo hello"})
     assert output.tool_output.strip() == "hello"
     assert output.tool_result_message == "Command 'echo hello' executed."
     assert output.auxiliary_data["success"]
@@ -515,7 +515,7 @@ class TestWithRealContainer(unittest.TestCase):
         container.stop()
         container.remove()
 
-    def test_run_impl(self):
+    async def test_run_impl(self):
         """Test the run_impl method with a real container."""
         assert self.container is not None and self.container.id is not None
         docker_filter = DockerCommandFilter(
@@ -529,13 +529,13 @@ class TestWithRealContainer(unittest.TestCase):
             command_filters=[docker_filter],
         )
 
-        result = tool.run_impl({"command": "ls -l"})
+        result = await tool.run_impl({"command": "ls -l"})
 
         self.assertIsInstance(result, ToolImplOutput)
         self.assertEqual(result.auxiliary_data["success"], True)
         self.assertEqual(result.tool_output.strip().splitlines()[0].strip(), "total 56")
 
-    def test_compound_command(self):
+    async def test_compound_command(self):
         assert self.container is not None and self.container.id is not None
         docker_filter = DockerCommandFilter(
             container=self.container.id,
@@ -548,7 +548,7 @@ class TestWithRealContainer(unittest.TestCase):
             command_filters=[docker_filter],
         )
 
-        result = tool.run_impl({"command": "touch /tmp/test.txt && ls /tmp/test.txt"})
+        result = await tool.run_impl({"command": "touch /tmp/test.txt && ls /tmp/test.txt"})
         print(result.auxiliary_data["executed_command"])
         print(result.tool_output)
         self.assertEqual(result.tool_output.strip(), "/tmp/test.txt")

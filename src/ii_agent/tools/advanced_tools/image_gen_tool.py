@@ -90,7 +90,7 @@ The generated image will be saved to the specified local path in the workspace a
             print(f"Error initializing Vertex AI or loading Imagen model: {e}")
             self.model = None
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

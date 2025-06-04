@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Any, Optional
 import uuid
+from functools import partial
 
 from typing import List
 from fastapi import WebSocket
@@ -155,7 +156,15 @@ try breaking down the task into smaller steps. After call this tool to update or
         """Start processing the message queue."""
         return asyncio.create_task(self._process_messages())
 
-    def run_impl(
+    def _validate_tool_input(self, tool_input: dict[str, Any]):
+        """Validates the tool input for the agent."""
+        # Basic validation - ensure instruction is present
+        if "instruction" not in tool_input:
+            raise ValueError("Missing required parameter: instruction")
+        if not isinstance(tool_input["instruction"], str):
+            raise ValueError("Parameter 'instruction' must be a string")
+
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -220,12 +229,15 @@ try breaking down the task into smaller steps. After call this tool to update or
             self.logger_for_agent_logs.info(
                 f"(Current token count: {self.history.count_tokens()})\n"
             )
-
-            model_response, _ = self.client.generate(
-                messages=self.history.get_messages_for_llm(),
-                max_tokens=self.max_output_tokens,
-                tools=all_tool_params,
-                system_prompt=self.system_prompt,
+            loop = asyncio.get_event_loop()
+            model_response, _ = await loop.run_in_executor(
+                None,
+                partial(self.client.generate,
+                    messages=self.history.get_messages_for_llm(),
+                    max_tokens=self.max_output_tokens,
+                    tools=all_tool_params,
+                    system_prompt=self.system_prompt,
+                )
             )
 
             if len(model_response) == 0:
@@ -287,7 +299,7 @@ try breaking down the task into smaller steps. After call this tool to update or
                     tool_output=TOOL_RESULT_INTERRUPT_MESSAGE,
                     tool_result_message=TOOL_RESULT_INTERRUPT_MESSAGE,
                 )
-            tool_result = self.tool_manager.run_tool(tool_call, self.history)
+            tool_result = await self.tool_manager.run_tool(tool_call, self.history)
 
             self.add_tool_call_result(tool_call, tool_result)
             if self.tool_manager.should_stop():
@@ -310,23 +322,39 @@ try breaking down the task into smaller steps. After call this tool to update or
     def get_tool_start_message(self, tool_input: dict[str, Any]) -> str:
         return f"Agent started with instruction: {tool_input['instruction']}"
 
-    def run_agent(
+    async def run_async(
+        self,
+        tool_input: dict[str, Any],
+        message_history: Optional[MessageHistory] = None,
+    ) -> str | list[dict[str, Any]]:
+        """Run the agent asynchronously - equivalent to the base LLMTool run_async method."""
+        try:
+            self._validate_tool_input(tool_input)
+            result = await self.run_impl(tool_input, message_history)
+            tool_output = result.tool_output
+        except Exception as exc:
+            raise RuntimeError(f"Agent execution failed: {exc}")
+
+        return tool_output
+
+    async def run_agent_async(
         self,
         instruction: str,
         files: list[str] | None = None,
         resume: bool = False,
         orientation_instruction: str | None = None,
     ) -> str:
-        """Start a new agent run.
+        """Start a new agent run asynchronously.
 
         Args:
             instruction: The instruction to the agent.
+            files: Optional list of files to attach
             resume: Whether to resume the agent from the previous state,
                 continuing the dialog.
             orientation_instruction: Optional orientation instruction
 
         Returns:
-            A tuple of (result, message).
+            The result from the agent execution.
         """
         self.tool_manager.reset()
         if not resume:
@@ -339,7 +367,28 @@ try breaking down the task into smaller steps. After call this tool to update or
         }
         if orientation_instruction:
             tool_input["orientation_instruction"] = orientation_instruction
-        return self.run(tool_input, self.history)
+        return await self.run_async(tool_input, self.history)
+
+    def run_agent(
+        self,
+        instruction: str,
+        files: list[str] | None = None,
+        resume: bool = False,
+        orientation_instruction: str | None = None,
+    ) -> str:
+        """Start a new agent run synchronously.
+
+        Args:
+            instruction: The instruction to the agent.
+            files: Optional list of files to attach
+            resume: Whether to resume the agent from the previous state,
+                continuing the dialog.
+            orientation_instruction: Optional orientation instruction
+
+        Returns:
+            The result from the agent execution.
+        """
+        return asyncio.run(self.run_agent_async(instruction, files, resume, orientation_instruction))
 
     def clear(self):
         """Clear the dialog and reset interruption state.

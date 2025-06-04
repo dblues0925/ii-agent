@@ -25,7 +25,7 @@ class AudioTranscribeTool(GeminiTool):
     ):
         super().__init__(workspace_manager, model)
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -87,7 +87,7 @@ Provide one query at a time. Supported formats: {", ".join(SUPPORTED_FORMATS)}
     ):
         super().__init__(workspace_manager, model)
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

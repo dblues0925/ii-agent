@@ -37,7 +37,7 @@ Provide one query at a time.
     ):
         super().__init__(workspace_manager, model)
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
