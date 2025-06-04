@@ -373,7 +373,9 @@ Notes for using the `str_replace` command:\n
                 file_lines
             ),  # Use total lines in file, not just the viewed range
             init_line=init_line,
-        )
+        ).replace(
+            "/app/workspace/" + self.workspace_manager.root, "/workspace"
+        )  # Quick fix for the path issue
         return ExtendedToolImplOutput(
             output, "Displayed file content", {"success": True}
         )
