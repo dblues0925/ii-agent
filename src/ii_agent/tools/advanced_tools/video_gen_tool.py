@@ -158,7 +158,7 @@ The generated video will be saved to the specified local path in the workspace."
         )
         self.video_model = DEFAULT_MODEL
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -325,7 +325,7 @@ The generated video will be saved to the specified local path in the workspace."
         )
         self.video_model = DEFAULT_MODEL
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

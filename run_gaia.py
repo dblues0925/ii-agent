@@ -335,14 +335,10 @@ Run verification steps if that's needed, you must make sure you find the correct
         )
 
         # Run agent with question-specific workspace
-        loop = asyncio.get_running_loop()
-        final_result = await loop.run_in_executor(
-            None,  # Uses default ThreadPoolExecutor
-            lambda: agent.run_agent(
-                augmented_question,
-                resume=True,
-                files=[example["file_name"]] if example["file_name"] else [],
-            ),
+        final_result = await agent.run_agent_async(
+            augmented_question,
+            resume=True,
+            files=[example["file_name"]] if example["file_name"] else [],
         )
 
         output = str(final_result)

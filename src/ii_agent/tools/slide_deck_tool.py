@@ -4,6 +4,7 @@ import os
 from ii_agent.llm.message_history import MessageHistory
 from ii_agent.tools.base import LLMTool, ToolImplOutput
 from ii_agent.utils.workspace_manager import WorkspaceManager
+import uuid
 
 
 class SlideDeckInitTool(LLMTool):
@@ -19,7 +20,7 @@ class SlideDeckInitTool(LLMTool):
         super().__init__()
         self.workspace_manager = workspace_manager
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -106,7 +107,7 @@ class SlideDeckCompleteTool(LLMTool):
         super().__init__()
         self.workspace_manager = workspace_manager
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -144,4 +145,46 @@ class SlideDeckCompleteTool(LLMTool):
             message,
             message,
             auxiliary_data={"success": True, "slide_paths": slide_paths},
+        )
+
+    async def run_impl(
+        self,
+        tool_input: dict[str, Any],
+        message_history: Optional[MessageHistory] = None,
+    ) -> ToolImplOutput:
+        slide_deck_id = tool_input["slide_deck_id"]
+        content = tool_input["content"]
+
+        # Find the corresponding file
+        relative_path = f"slide_deck_{slide_deck_id}.html"
+        file_path = self.workspace_manager.workspace_path(relative_path)
+
+        if not file_path.exists():
+            return ToolImplOutput(
+                f"Slide deck with ID {slide_deck_id} not found",
+                "Slide deck not found",
+                {"success": False},
+            )
+
+        # Read existing content
+        with open(file_path, "r") as f:
+            html_content = f.read()
+
+        # Add new slide before the closing body tag
+        new_slide = f"""    <div class="slide">
+        {content}
+    </div>
+</body>"""
+
+        # Replace the closing body tag
+        html_content = html_content.replace("</body>", new_slide)
+
+        # Write back to file
+        with open(file_path, "w") as f:
+            f.write(html_content)
+
+        return ToolImplOutput(
+            f"Added content to slide deck {slide_deck_id}",
+            f"Slide deck updated successfully",
+            {"slide_deck_id": slide_deck_id, "file_path": str(relative_path)},
         )

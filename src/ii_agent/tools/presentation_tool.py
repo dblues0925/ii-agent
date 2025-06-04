@@ -194,7 +194,7 @@ action = init
         self.tool_params = [tool.get_tool_param() for tool in self.tools]
         self.max_turns = 200
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -206,7 +206,7 @@ action = init
             self.history = MessageHistory()
 
             # Clone the reveal.js repository to the specified path
-            clone_result = self.bash_tool.run_impl(
+            clone_result = await self.bash_tool.run_impl(
                 {
                     "command": f"git clone https://github.com/khoangothe/reveal.js.git {self.workspace_manager.root}/presentation/reveal.js"
                 }
@@ -220,7 +220,7 @@ action = init
                 )
 
             # Install dependencies
-            install_result = self.bash_tool.run_impl(
+            install_result = await self.bash_tool.run_impl(
                 {
                     "command": f"cd {self.workspace_manager.root}/presentation/reveal.js && npm install && cd {self.workspace_manager.root}"
                 }

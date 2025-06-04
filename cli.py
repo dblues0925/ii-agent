@@ -176,11 +176,8 @@ async def async_main():
 
             logger_for_agent_logs.info("\nAgent is thinking...")
             try:
-                # Run synchronous method in executor
-                result = await loop.run_in_executor(
-                    None,  # Uses default ThreadPoolExecutor
-                    lambda: agent.run_agent(user_input, resume=True),
-                )
+                # Run the agent using the new async method
+                result = await agent.run_agent_async(user_input, resume=True)
                 logger_for_agent_logs.info(f"Agent: {result}")
             except (KeyboardInterrupt, asyncio.CancelledError):
                 agent.cancel()

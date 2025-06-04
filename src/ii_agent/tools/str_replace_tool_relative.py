@@ -214,7 +214,7 @@ Notes for using the `str_replace` command:\n
                 )
             )
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
