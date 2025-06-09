@@ -156,14 +156,6 @@ try breaking down the task into smaller steps. After call this tool to update or
         """Start processing the message queue."""
         return asyncio.create_task(self._process_messages())
 
-    def _validate_tool_input(self, tool_input: dict[str, Any]):
-        """Validates the tool input for the agent."""
-        # Basic validation - ensure instruction is present
-        if "instruction" not in tool_input:
-            raise ValueError("Missing required parameter: instruction")
-        if not isinstance(tool_input["instruction"], str):
-            raise ValueError("Parameter 'instruction' must be a string")
-
     async def run_impl(
         self,
         tool_input: dict[str, Any],
@@ -321,22 +313,7 @@ try breaking down the task into smaller steps. After call this tool to update or
 
     def get_tool_start_message(self, tool_input: dict[str, Any]) -> str:
         return f"Agent started with instruction: {tool_input['instruction']}"
-
-    async def run_async(
-        self,
-        tool_input: dict[str, Any],
-        message_history: Optional[MessageHistory] = None,
-    ) -> str | list[dict[str, Any]]:
-        """Run the agent asynchronously - equivalent to the base LLMTool run_async method."""
-        try:
-            self._validate_tool_input(tool_input)
-            result = await self.run_impl(tool_input, message_history)
-            tool_output = result.tool_output
-        except Exception as exc:
-            raise RuntimeError(f"Agent execution failed: {exc}")
-
-        return tool_output
-
+ 
     async def run_agent_async(
         self,
         instruction: str,

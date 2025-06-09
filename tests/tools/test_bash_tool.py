@@ -20,6 +20,8 @@ from ii_agent.tools.bash_tool import (
     create_bash_tool,
 )
 
+pytest_plugins = ('pytest_asyncio',)
+
 
 def bash_tool():
     return BashTool(
@@ -28,6 +30,7 @@ def bash_tool():
     )
 
 
+@pytest.mark.asyncio
 async def test_successful_command():
     """Test that a successful command returns the expected output."""
     bash_tool = BashTool(
@@ -49,6 +52,7 @@ async def test_successful_command():
         }
 
 
+@pytest.mark.asyncio
 async def test_failed_command():
     """Test that a failed command returns the appropriate error."""
     bash_tool = BashTool(
@@ -74,6 +78,7 @@ async def test_failed_command():
         }
 
 
+@pytest.mark.asyncio
 async def test_command_with_exception():
     """Test that an exception during command execution is handled properly."""
     bash_tool = BashTool(
@@ -97,16 +102,17 @@ async def test_command_with_exception():
         }
 
 
-async def test_get_tool_start_message():
+def test_get_tool_start_message():
     """Test that the tool start message is formatted correctly."""
     bash_tool = BashTool(
         workspace_root=Path("/tmp"),
         require_confirmation=False,
     )
-    message = await bash_tool.get_tool_start_message({"command": "echo hello"})
+    message = bash_tool.get_tool_start_message({"command": "echo hello"})
     assert message == "Executing bash command: echo hello"
 
 
+@pytest.mark.asyncio
 async def test_directory_change_persistence():
     """Test that directory changes persist between commands and affect subsequent operations."""
     # Create a temporary directory for testing
@@ -163,10 +169,10 @@ class MockCommandFilter(CommandFilter):
         return f"{self.prefix} {command}"
 
 
-class BashToolTest(unittest.TestCase):
+class BashToolTest(unittest.IsolatedAsyncioTestCase):
     """Tests for the BashTool class."""
 
-    def setUp(self):
+    async def asyncSetUp(self):
         """Set up test fixtures."""
         self.workspace_root = Path("/workspace")
 
@@ -192,7 +198,7 @@ class BashToolTest(unittest.TestCase):
         # Reset mocks for each test to avoid interference between tests
         self.mock_run_command.reset_mock()
 
-    def tearDown(self):
+    async def asyncTearDown(self):
         """Tear down test fixtures."""
         self.start_shell_patch.stop()
         self.run_command_patch.stop()
@@ -268,7 +274,7 @@ class BashToolTest(unittest.TestCase):
         self.assertEqual(result, "PREFIX2: PREFIX1: ls -l")
 
     @patch("builtins.input", return_value="y")
-    def test_run_impl_with_confirmation(self, mock_input):
+    async def test_run_impl_with_confirmation(self, mock_input):
         """Test running a command with user confirmation."""
         tool = BashTool(
             workspace_root=self.workspace_root,
@@ -277,7 +283,7 @@ class BashToolTest(unittest.TestCase):
         # Creating the tool with a workspace calls run_impl once, we reset it here.
         self.mock_run_command.reset_mock()
 
-        result = tool.run_impl({"command": "ls -l"})
+        result = await tool.run_impl({"command": "ls -l"})
 
         # Check that input was called for confirmation
         mock_input.assert_called_once()
@@ -293,7 +299,7 @@ class BashToolTest(unittest.TestCase):
         self.assertEqual(result.auxiliary_data["success"], True)
 
     @patch("builtins.input", return_value="n")
-    def test_run_impl_confirmation_denied(self, mock_input):
+    async def test_run_impl_confirmation_denied(self, mock_input):
         """Test running a command with user confirmation denied."""
         tool = BashTool(
             workspace_root=self.workspace_root,
@@ -302,7 +308,7 @@ class BashToolTest(unittest.TestCase):
         # Creating the tool with a workspace calls run_impl once, we reset it here.
         self.mock_run_command.reset_mock()
 
-        result = tool.run_impl({"command": "ls -l"})
+        result = await tool.run_impl({"command": "ls -l"})
 
         # Check that input was called for confirmation
         mock_input.assert_called_once()
@@ -315,14 +321,14 @@ class BashToolTest(unittest.TestCase):
         self.assertEqual(result.auxiliary_data["success"], False)
         self.assertEqual(result.auxiliary_data["reason"], "User did not confirm")
 
-    def test_run_impl_no_confirmation(self):
+    async def test_run_impl_no_confirmation(self):
         """Test running a command without requiring confirmation."""
         tool = BashTool(
             workspace_root=self.workspace_root,
             require_confirmation=False,
         )
 
-        result = tool.run_impl({"command": "ls -l"})
+        result = await tool.run_impl({"command": "ls -l"})
 
         # Check that command was executed
         self.mock_run_command.assert_called_with(
@@ -334,7 +340,7 @@ class BashToolTest(unittest.TestCase):
         self.assertEqual(result.tool_output, "command output")
         self.assertEqual(result.auxiliary_data["success"], True)
 
-    def test_run_impl_with_filters(self):
+    async def test_run_impl_with_filters(self):
         """Test running a command with command filters."""
         filter1 = MockCommandFilter("PREFIX:")
 
@@ -344,7 +350,7 @@ class BashToolTest(unittest.TestCase):
             command_filters=[filter1],
         )
 
-        result = tool.run_impl({"command": "ls -l"})
+        result = await tool.run_impl({"command": "ls -l"})
 
         # Check that filter was called
         self.assertTrue(filter1.called)
@@ -358,7 +364,7 @@ class BashToolTest(unittest.TestCase):
         self.assertEqual(result.auxiliary_data["original_command"], "ls -l")
         self.assertEqual(result.auxiliary_data["executed_command"], "PREFIX: ls -l")
 
-    def test_run_impl_error(self):
+    async def test_run_impl_error(self):
         """Test handling of command execution errors."""
         # Make run_command raise an exception
         self.mock_run_command.side_effect = Exception("Command failed")
@@ -368,7 +374,7 @@ class BashToolTest(unittest.TestCase):
             require_confirmation=False,
         )
 
-        result = tool.run_impl({"command": "ls -l"})
+        result = await tool.run_impl({"command": "ls -l"})
 
         # Check result
         self.assertIsInstance(result, ToolImplOutput)
@@ -459,6 +465,7 @@ class StartPersistentShellTest(unittest.TestCase):
         mock_child.expect.assert_called_once()
 
 
+@pytest.mark.asyncio
 async def test_command_with_timeout():
     """Test that timeouts are handled properly and we can run subsequent commands."""
     bash_tool = BashTool(
@@ -480,15 +487,15 @@ async def test_command_with_timeout():
 
 # These will pass, but don't run in CI.
 @pytest.mark.xfail
-class TestWithRealContainer(unittest.TestCase):
+class TestWithRealContainer(unittest.IsolatedAsyncioTestCase):
     """Test the BashTool with a real container."""
 
-    def setUp(self):
+    async def asyncSetUp(self):
         """Set up the test."""
         self.workspace_root = Path("/workspace")
         self.start_container()
 
-    def tearDown(self):
+    async def asyncTearDown(self):
         """Tear down the test."""
         pass
         self.stop_container()

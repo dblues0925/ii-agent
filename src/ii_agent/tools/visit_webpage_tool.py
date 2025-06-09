@@ -42,16 +42,33 @@ class VisitWebpageTool(LLMTool):
             url = "https://arxiv.org/html/" + url.split("/")[-1]
 
         try:
-            content = await self.visit_client.forward_async(url)
+            output = await self.visit_client.forward_async(url)
             return ToolImplOutput(
-                content,
-                f"Successfully visited {url}",
-                auxiliary_data={"success": True, "url": url},
+                output,
+                f"Webpage {url} successfully visited using {self.visit_client.name}",
+                auxiliary_data={"success": True},
             )
-        except Exception as e:
-            error_message = f"Error visiting {url}: {str(e)}"
+
+        except ContentExtractionError:
+            error_msg = f"Failed to extract content from {url} using {self.visit_client.name} tool. Please visit the webpage in a browser to manually verify the content or confirm that none is available."
             return ToolImplOutput(
-                error_message,
+                error_msg,
+                f"Failed to extract content from {url}",
+                auxiliary_data={"success": False},
+            )
+
+        except NetworkError:
+            error_msg = f"Failed to access {url} using {self.visit_client.name} tool. Please check if the URL is correct and accessible from your browser."
+            return ToolImplOutput(
+                error_msg,
+                f"Failed to access {url} due to network error",
+                auxiliary_data={"success": False},
+            )
+
+        except WebpageVisitException:
+            error_msg = f"Failed to visit {url} using {self.visit_client.name} tool. Please visit the webpage in a browser to manually verify the content."
+            return ToolImplOutput(
+                error_msg,
                 f"Failed to visit {url}",
-                auxiliary_data={"success": False, "url": url, "error": str(e)},
+                auxiliary_data={"success": False},
             )
