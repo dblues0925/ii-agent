@@ -22,7 +22,7 @@ from rich.panel import Panel
 
 from ii_agent.tools import get_system_tools
 from ii_agent.prompts.system_prompt import SYSTEM_PROMPT
-from ii_agent.agents.anthropic_fc import AnthropicFC
+from ii_agent.agents.function_call import FunctionCallAgent
 from ii_agent.utils import WorkspaceManager
 from ii_agent.llm import get_client
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
@@ -139,7 +139,7 @@ async def async_main():
             "memory_tool": args.memory_tool,
         },
     )
-    agent = AnthropicFC(
+    agent = FunctionCallAgent(
         system_prompt=SYSTEM_PROMPT,
         client=client,
         workspace_manager=workspace_manager,

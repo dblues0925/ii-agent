@@ -22,7 +22,7 @@ from huggingface_hub import snapshot_download
 import uuid
 import asyncio
 from ii_agent.db.models import Session, Event
-from ii_agent.agents.anthropic_fc import AnthropicFC
+from ii_agent.agents.function_call import FunctionCallAgent
 from ii_agent.browser.browser import Browser
 from ii_agent.prompts.gaia_system_prompt import GAIA_SYSTEM_PROMPT
 from ii_agent.tools.bash_tool import BashTool
@@ -301,7 +301,7 @@ async def answer_single_question(
     system_prompt = GAIA_SYSTEM_PROMPT
 
     # Create agent instance for this question
-    agent = AnthropicFC(
+    agent = FunctionCallAgent(
         system_prompt=system_prompt,
         client=client,
         tools=tools,

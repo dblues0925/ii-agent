@@ -28,7 +28,7 @@ AGENT_INTERRUPT_FAKE_MODEL_RSP = (
 )
 
 
-class AnthropicFC(BaseAgent):
+class FunctionCallAgent(BaseAgent):
     name = "general_agent"
     description = """\
 A general agent that can accomplish tasks and answer questions.
