@@ -6,7 +6,7 @@ from fastapi import WebSocket
 
 from ii_agent.llm.base import LLMClient
 from ii_agent.utils import WorkspaceManager
-from ii_agent.agents.anthropic_fc import AnthropicFC
+from ii_agent.agents.function_call import FunctionCallAgent
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
 from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.db.manager import DatabaseManager
@@ -171,7 +171,7 @@ class AgentFactory:
             else SYSTEM_PROMPT
         )
 
-        agent = AnthropicFC(
+        agent = FunctionCallAgent(
             system_prompt=system_prompt,
             client=client,
             tools=tools,
