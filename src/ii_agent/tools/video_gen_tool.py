@@ -477,7 +477,7 @@ The generated video will be saved to the specified local path in the workspace."
 
 class LongVideoGenerateFromTextTool(LLMTool):
     name = "generate_long_video_from_text"
-    description = f"""Generates a long video (>= 10 seconds) based on a sequence of text prompts. Each prompt presents a new scene in the video, each scene is minimum 5 and maximum 8 seconds (preferably 5 seconds). Video is combined sequentially from the first scene to the last.
+    description = """Generates a long video (>= 10 seconds) based on a sequence of text prompts. Each prompt presents a new scene in the video, each scene is minimum 5 and maximum 8 seconds (preferably 5 seconds). Video is combined sequentially from the first scene to the last.
 The generated video will be saved to the specified local path in the workspace."""
     input_schema = {
         "type": "object",
@@ -562,7 +562,7 @@ The generated video will be saved to the specified local path in the workspace."
                 duration_per_scene = 8
             
             # Generate first scene from text
-            first_scene_filename = f"scene_0.mp4"
+            first_scene_filename = "scene_0.mp4"
             first_scene_path = temp_dir / first_scene_filename
             
             text_tool = VideoGenerateFromTextTool(self.workspace_manager)
@@ -683,7 +683,7 @@ The generated video will be saved to the specified local path in the workspace."
 
 class LongVideoGenerateFromImageTool(LLMTool):
     name = "generate_long_video_from_image"
-    description = f"""Generates a long video (>= 10 seconds) based on input image and a sequence of text prompts. Each prompt presents a new scene in the video, each scene is minimum 5 and maximum 8 seconds (preferably 5 seconds). Video is combined sequentially from the first scene to the last.
+    description = """Generates a long video (>= 10 seconds) based on input image and a sequence of text prompts. Each prompt presents a new scene in the video, each scene is minimum 5 and maximum 8 seconds (preferably 5 seconds). Video is combined sequentially from the first scene to the last.
 The generated video will be saved to the specified local path in the workspace."""
     input_schema = {
         "type": "object",
@@ -771,7 +771,7 @@ The generated video will be saved to the specified local path in the workspace."
                 duration_per_scene = 8
             
             # Generate first scene from text
-            first_scene_filename = f"scene_0.mp4"
+            first_scene_filename = "scene_0.mp4"
             first_scene_path = temp_dir / first_scene_filename
             
             image_tool = VideoGenerateFromImageTool(self.workspace_manager)
