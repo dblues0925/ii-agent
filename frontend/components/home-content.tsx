@@ -117,13 +117,16 @@ export default function HomeContent() {
       payload: newUserMessage,
     });
 
+    const { thinking_tokens, ...tool_args } = state.toolSettings;
+
     // send init agent event when first query
     if (!sessionId) {
       sendMessage({
         type: "init_agent",
         content: {
           model_name: state.selectedModel,
-          tool_args: state.toolSettings,
+          tool_args,
+          thinking_tokens,
         },
       });
     }
