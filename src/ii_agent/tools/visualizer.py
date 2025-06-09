@@ -1,7 +1,5 @@
 import mimetypes
 from typing import Any, Optional
-import base64
-from pathlib import Path
 
 from ii_agent.tools.base import (
     LLMTool,
@@ -18,12 +16,12 @@ class DisplayImageTool(LLMTool):
     input_schema = {
         "type": "object",
         "properties": {
-            "file_path": {
+            "image_path": {
                 "type": "string",
                 "description": "The path to the image to load. This should be a local path to downloaded image.",
             },
         },
-        "required": ["file_path"],
+        "required": ["image_path"],
     }
 
     def __init__(self, workspace_manager: WorkspaceManager):
@@ -34,69 +32,41 @@ class DisplayImageTool(LLMTool):
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
     ) -> ToolImplOutput:
-        file_path = tool_input["file_path"]
-        
-        # Ensure the path is treated as relative to the workspace root
-        full_file_path = self.workspace_manager.workspace_path(Path(file_path))
-        
-        if not full_file_path.exists():
+        image_path = tool_input["image_path"]
+
+        if not isinstance(image_path, str):
             return ToolImplOutput(
-                f"Error: File not found at {file_path}",
-                f"File not found at {file_path}",
-                {"success": False, "error": "File not found"},
+                tool_output="Error: image_path must be a string",
+                tool_result_message="Error: image_path must be a string",
             )
-        if not full_file_path.is_file():
-            return ToolImplOutput(
-                f"Error: Path {file_path} is not a file.",
-                f"Path {file_path} is not a file.",
-                {"success": False, "error": "Path is not a file"},
-            )
-        
-        # Check if the file is an image
-        allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg']
-        if full_file_path.suffix.lower() not in allowed_extensions:
-            return ToolImplOutput(
-                f"Error: File {file_path} is not a supported image format. Supported formats: {', '.join(allowed_extensions)}",
-                f"File {file_path} is not a supported image format",
-                {"success": False, "error": "Unsupported image format"},
-            )
-        
+
         try:
-            # Read and encode the image
-            with open(full_file_path, "rb") as image_file:
-                encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
-            
-            # Determine the media type
-            media_type_map = {
-                '.png': 'image/png',
-                '.jpg': 'image/jpeg', 
-                '.jpeg': 'image/jpeg',
-                '.gif': 'image/gif',
-                '.bmp': 'image/bmp',
-                '.webp': 'image/webp',
-                '.svg': 'image/svg+xml'
-            }
-            media_type = media_type_map.get(full_file_path.suffix.lower(), 'image/png')
-            
-            # Return the image as a message content block
-            image_content = {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": media_type,
-                    "data": encoded_image
+            # Convert relative path to absolute path using workspace_manager
+            abs_path = str(self.workspace_manager.workspace_path(image_path))
+
+            # Get mime type and encode image
+            mime_type, _ = mimetypes.guess_type(abs_path)
+            if not mime_type:
+                mime_type = "image/png"  # Default to PNG if type cannot be determined
+
+            base64_image = encode_image(abs_path)
+
+            tool_output = [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime_type,
+                        "data": base64_image,
+                    },
                 }
-            }
-            
+            ]
+
             return ToolImplOutput(
-                [image_content],
-                f"Successfully displayed image {file_path}",
-                {"success": True, "media_type": media_type},
+                tool_output=tool_output,
+                tool_result_message=f"Successfully loaded image from {image_path}",
             )
-            
+
         except Exception as e:
-            return ToolImplOutput(
-                f"Error reading image {file_path}: {str(e)}",
-                f"Failed to display image {file_path}",
-                {"success": False, "error": str(e)},
-            )
+            error_msg = f"Failed to process image: {str(e)}"
+            return ToolImplOutput(tool_output=error_msg, tool_result_message=error_msg)
