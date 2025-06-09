@@ -2,7 +2,7 @@ from typing import Any, Optional
 from google.genai import types
 from ii_agent.llm.message_history import MessageHistory
 from ii_agent.tools.base import ToolImplOutput
-from ii_agent.tools.advanced_tools.gemini import GeminiTool
+from ii_agent.tools.gemini import GeminiTool
 from ii_agent.utils import WorkspaceManager
 
 

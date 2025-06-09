@@ -1,7 +1,7 @@
 import asyncio
 from ii_agent.core.event import EventType, RealtimeEvent
 from ii_agent.llm.context_manager.base import ContextManager
-from ii_agent.tools.advanced_tools.image_search_tool import ImageSearchTool
+from ii_agent.tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.utils import WorkspaceManager
 from ii_agent.tools.bash_tool import create_bash_tool
