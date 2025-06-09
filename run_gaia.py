@@ -39,7 +39,7 @@ from ii_agent.tools.browser_tools import (
     BrowserViewTool,
     BrowserWaitTool,
 )
-from ii_agent.tools.advanced_tools.gemini import (
+from ii_agent.tools.gemini import (
     AudioUnderstandingTool,
     AudioTranscribeTool,
     YoutubeVideoUnderstandingTool,
