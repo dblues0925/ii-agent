@@ -10,7 +10,8 @@ export function useSessionManager({
   searchParams: URLSearchParams;
   handleEvent: (
     data: { id: string; type: AgentEvent; content: Record<string, unknown> },
-    workspacePath?: string
+    workspacePath?: string,
+    ignoreClickAction?: boolean
   ) => void;
 }) {
   const { dispatch } = useAppContext();
@@ -41,7 +42,7 @@ export function useSessionManager({
     dispatch({ type: "SET_LOADING", payload: true });
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      handleEvent({ ...event.event_payload, id: event.id }, workspace);
+      handleEvent({ ...event.event_payload, id: event.id }, workspace, true);
     }
     dispatch({ type: "SET_LOADING", payload: false });
   }, [dispatch, handleEvent]);
