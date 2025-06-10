@@ -34,7 +34,7 @@ interface AppState {
 }
 
 // Define action types
-type AppAction =
+export type AppAction =
   | { type: "SET_MESSAGES"; payload: Message[] }
   | { type: "ADD_MESSAGE"; payload: Message }
   | { type: "UPDATE_MESSAGE"; payload: Message }
