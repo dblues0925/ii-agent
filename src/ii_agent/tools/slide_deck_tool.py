@@ -30,7 +30,7 @@ class SlideDeckInitTool(LLMTool):
             os.makedirs(presentation_dir, exist_ok=True)
 
             # Clone the reveal.js repository to the specified path
-            clone_command = f"git clone https://github.com/khoangothe/reveal.js.git {self.workspace_manager.root}/presentation/reveal.js"
+            clone_command = f"git clone https://github.com/Intelligent-Internet/reveal.js {self.workspace_manager.root}/presentation/reveal.js"
             
             # Execute the clone command
             clone_result = subprocess.run(
