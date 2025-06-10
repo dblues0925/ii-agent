@@ -379,7 +379,11 @@ const ChatMessage = ({
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleJumpToResult}>
+                <Button
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={handleJumpToResult}
+                >
                   <SkipForward /> Skip to results
                 </Button>
               </div>

@@ -47,7 +47,8 @@ export function useAppEvents({
         type: AgentEvent;
         content: Record<string, unknown>;
       },
-      workspacePath?: string
+      workspacePath?: string,
+      ignoreClickAction?: boolean
     ) => {
       switch (data.type) {
         case AgentEvent.USER_MESSAGE:
@@ -132,7 +133,9 @@ export function useAppEvents({
               safeDispatch({ type: "SET_BROWSER_URL", payload: url });
             }
             safeDispatch({ type: "ADD_MESSAGE", payload: message });
-            handleClickAction(message.action);
+            if (!ignoreClickAction) {
+              handleClickAction(message.action);
+            }
           }
           break;
 
@@ -160,10 +163,11 @@ export function useAppEvents({
               },
             });
 
-            setTimeout(() => {
-              handleClickAction(lastMessage.action);
-            }, 500);
-
+            if (!ignoreClickAction) {
+              setTimeout(() => {
+                handleClickAction(lastMessage.action);
+              }, 500);
+            }
             safeDispatch({
               type: "UPDATE_MESSAGE",
               payload: lastMessage,
@@ -227,9 +231,11 @@ export function useAppEvents({
                       : undefined;
                 }
                 lastMessage.action.data.isResult = true;
-                setTimeout(() => {
-                  handleClickAction(lastMessage.action);
-                }, 500);
+                if (!ignoreClickAction) {
+                  setTimeout(() => {
+                    handleClickAction(lastMessage.action);
+                  }, 500);
+                }
 
                 safeDispatch({
                   type: "UPDATE_MESSAGE",
