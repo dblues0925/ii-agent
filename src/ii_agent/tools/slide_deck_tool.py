@@ -4,7 +4,7 @@ from ii_agent.llm.message_history import MessageHistory
 from ii_agent.sandbox.config import SandboxSettings
 from ii_agent.tools.base import LLMTool, ToolImplOutput
 from ii_agent.tools.clients.terminal_client import TerminalClient
-from ii_agent.utils.workspace_manager import WorkspaceManager
+from ii_agent.utils.tool_client.manager.workspace_manager import WorkspaceManager
 
 
 class SlideDeckInitTool(LLMTool):

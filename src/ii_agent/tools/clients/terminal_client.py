@@ -23,7 +23,7 @@ class TerminalClientConfig:
     timeout: float = 30.0
     default_shell: str = "/bin/bash"
     default_timeout: int = 10
-    container_id: Optional[str] = None
+    cwd: Optional[str] = None
 
 
 class TerminalClientBase(ABC):
@@ -77,7 +77,7 @@ class LocalTerminalClient(TerminalClientBase):
         self.manager = PexpectSessionManager(
             default_shell=config.default_shell,
             default_timeout=config.default_timeout,
-            container_id=config.container_id,
+            cwd=config.cwd,
         )
 
     def create_session(self, session_id: str) -> SessionResult:

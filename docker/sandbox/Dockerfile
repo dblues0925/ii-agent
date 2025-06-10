@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
 
 COPY src/ii_agent/utils/tool_client /app/ii_client
 
-WORKDIR /workspace
+WORKDIR /app
 
 RUN pip install -r ii_client/requirements.txt
 
-CMD ["python", "-m", "ii_client.sandbox_server", "--port", "17300"]
+CMD ["python", "-m", "ii_client.sandbox_server", "--port", "17300" , "--cwd", "/workspace"]

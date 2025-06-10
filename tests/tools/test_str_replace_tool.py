@@ -5,6 +5,7 @@ from ii_agent.tools.str_replace_tool_relative import StrReplaceEditorTool
 def build_ws_manager(root):
     workspace_manager = MagicMock()
     workspace_manager.root = root
+    workspace_manager.root_path.side_effect = lambda: root
     workspace_manager.workspace_path.side_effect = lambda path: path
     workspace_manager.container_path.side_effect = lambda path: path
     return workspace_manager

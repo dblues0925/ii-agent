@@ -221,6 +221,7 @@ class PexpectSessionManager:
                     encoding="utf-8",
                     echo=False,
                     timeout=self.default_timeout,
+                    cwd=self.cwd,
                 )
 
             time.sleep(0.2)

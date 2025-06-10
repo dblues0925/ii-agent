@@ -1,6 +1,9 @@
+import os
 from argparse import ArgumentParser
 import uuid
 from pathlib import Path
+from ii_agent.sandbox.config import SandboxSettings
+from ii_agent.sandbox.docker_sandbox import DockerSandbox
 from ii_agent.utils import WorkspaceManager
 from ii_agent.utils.constants import DEFAULT_MODEL
 
@@ -98,6 +101,17 @@ def parse_common_args(parser: ArgumentParser):
     return parser
 
 
+async def create_container_workspace(container_name: str):
+    settings = SandboxSettings()
+    await DockerSandbox(
+        container_name=container_name,
+        config=settings,
+        volume_bindings={
+            os.getenv("WORKSPACE_PATH") + "/" + container_name: settings.work_dir
+        },
+    ).create()
+
+
 async def create_workspace_manager_for_connection(
     workspace_root: str, use_container_workspace: bool = False
 ):
@@ -107,17 +121,14 @@ async def create_workspace_manager_for_connection(
     workspace_path = Path(workspace_root).resolve()
     connection_workspace = workspace_path / connection_id
     connection_workspace.mkdir(parents=True, exist_ok=True)
-    connection_workspace_path = (
-        connection_workspace if use_container_workspace else None
-    )
+    sandbox_settings = SandboxSettings()
 
     # Initialize workspace manager with connection-specific subdirectory
     workspace_manager = WorkspaceManager(
-        root=connection_workspace,
-        container_workspace=connection_workspace_path,
+        root=connection_workspace, container_workspace=Path(sandbox_settings.work_dir)
     )
 
     if use_container_workspace:
-        await workspace_manager.create_container_workspace()
+        await create_container_workspace(container_name=connection_id)
 
     return workspace_manager, connection_id

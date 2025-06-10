@@ -115,8 +115,7 @@ Notes for using the `str_replace` command:\n
         # Create client configuration
         if client_config is None:
             client_config = StrReplaceClientConfig(
-                mode="remote",
-                server_url="http://localhost:8001",
+                mode="local",
                 ignore_indentation_for_str_replace=ignore_indentation_for_str_replace,
                 expand_tabs=expand_tabs,
             )
@@ -137,7 +136,7 @@ Notes for using the `str_replace` command:\n
         insert_line = tool_input.get("insert_line")
 
         try:
-            _ws_path = self.workspace_manager.workspace_path(Path(path))
+            _ws_path = self.workspace_manager.container_path(Path(path))
             self.rel_path = str(self.workspace_manager.relative_path(_ws_path))
             validate_path_response = self.str_replace_client.validate_path(
                 command, str(_ws_path), display_path=self.rel_path
@@ -145,9 +144,8 @@ Notes for using the `str_replace` command:\n
             if not validate_path_response.success:
                 raise ToolError(validate_path_response.file_content)
 
-            root_path = self.workspace_manager.workspace_path(
-                self.workspace_manager.root
-            )
+            root_path = self.workspace_manager.root_path()
+
             if not self.str_replace_client.is_path_in_directory(
                 str(root_path), str(_ws_path)
             ):

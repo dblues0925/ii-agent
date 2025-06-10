@@ -268,6 +268,7 @@ def create_app(
     ignore_indentation_for_str_replace: bool = False,
     expand_tabs: bool = False,
     allowed_origins: Optional[List[str]] = None,
+    cwd: Optional[str] = None,
 ) -> FastAPI:
     """Factory function to create the FastAPI app."""
     server = StrReplaceServer(

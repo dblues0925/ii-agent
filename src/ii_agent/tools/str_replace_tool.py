@@ -182,9 +182,7 @@ Notes for using the `str_replace` command:\n
     def view(
         self, path: str, view_range: Optional[list[int]] = None
     ) -> ExtendedToolImplOutput:
-        response = self.str_replace_client.view(
-            path, view_range, display_path=self.rel_path
-        )
+        response = self.str_replace_client.view(path, view_range, display_path=path)
         if not response.success:
             return ExtendedToolImplOutput(
                 response.file_content,
@@ -201,7 +199,7 @@ Notes for using the `str_replace` command:\n
     ) -> ExtendedToolImplOutput:
         """Replace old_str with new_str in content, ignoring indentation."""
         response = self.str_replace_client.str_replace(
-            path, old_str, new_str, display_path=self.rel_path
+            path, old_str, new_str, display_path=path
         )
         if not response.success:
             return ExtendedToolImplOutput(
@@ -210,15 +208,13 @@ Notes for using the `str_replace` command:\n
                 {"success": False},
             )
 
-        new_file_response = self.str_replace_client.read_file(
-            path, display_path=self.rel_path
-        )
+        new_file_response = self.str_replace_client.read_file(path, display_path=path)
         if new_file_response.success:
             self._send_file_update(path, new_file_response.file_content)
 
         return ExtendedToolImplOutput(
             response.file_content,
-            f"The file {self.rel_path} has been edited.",
+            f"The file {path} has been edited.",
             {"success": True},
         )
 
@@ -227,7 +223,7 @@ Notes for using the `str_replace` command:\n
     ) -> ExtendedToolImplOutput:
         """Implement the insert command, which inserts new_str at the specified line in the file content."""
         response = self.str_replace_client.insert(
-            path, insert_line, new_str, display_path=self.rel_path
+            path, insert_line, new_str, display_path=path
         )
         if not response.success:
             return ExtendedToolImplOutput(
@@ -236,9 +232,7 @@ Notes for using the `str_replace` command:\n
                 {"success": False},
             )
 
-        new_file_response = self.str_replace_client.read_file(
-            path, display_path=self.rel_path
-        )
+        new_file_response = self.str_replace_client.read_file(path, display_path=path)
         if new_file_response.success:
             self._send_file_update(path, new_file_response.file_content)
 
@@ -251,7 +245,7 @@ Notes for using the `str_replace` command:\n
     def undo_edit(self, path: str) -> ExtendedToolImplOutput:
         """Implement the undo_edit command."""
 
-        response = self.str_replace_client.undo_edit(path, display_path=self.rel_path)
+        response = self.str_replace_client.undo_edit(path, display_path=path)
         if not response.success:
             return ExtendedToolImplOutput(
                 response.file_content,
@@ -269,16 +263,14 @@ Notes for using the `str_replace` command:\n
 
     def read_file(self, path: str):
         """Read the content of a file from a given path; raise a ToolError if an error occurs."""
-        response = self.str_replace_client.read_file(path, display_path=self.rel_path)
+        response = self.str_replace_client.read_file(path, display_path=path)
         if not response.success:
             raise ToolError(response.file_content)
         return response.file_content
 
     def write_file(self, path: str, file: str):
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
-        response = self.str_replace_client.write_file(
-            path, file, display_path=self.rel_path
-        )
+        response = self.str_replace_client.write_file(path, file, display_path=path)
         if not response.success:
             raise ToolError(response.file_content)
         self._send_file_update(path, file)  # Send update after write

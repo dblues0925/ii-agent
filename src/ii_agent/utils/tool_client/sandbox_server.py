@@ -26,6 +26,7 @@ class CombinedSandboxServer:
         default_shell: str = "/bin/bash",
         default_timeout: int = 10,
         container_id: Optional[str] = None,
+        cwd: Optional[str] = None,
         # Common parameters
         allowed_origins: Optional[List[str]] = None,
     ):
@@ -52,12 +53,14 @@ class CombinedSandboxServer:
             ignore_indentation_for_str_replace=ignore_indentation_for_str_replace,
             expand_tabs=expand_tabs,
             allowed_origins=allowed_origins,
+            cwd=cwd,
         )
 
         terminal_app = create_terminal_app(
             default_shell=default_shell,
             default_timeout=default_timeout,
             container_id=container_id,
+            cwd=cwd,
             allowed_origins=allowed_origins,
         )
 
@@ -152,6 +155,7 @@ def create_combined_app(
     default_shell: str = "/bin/bash",
     default_timeout: int = 10,
     container_id: Optional[str] = None,
+    cwd: Optional[str] = None,
     # Common parameters
     allowed_origins: Optional[List[str]] = None,
 ) -> FastAPI:
@@ -162,6 +166,7 @@ def create_combined_app(
         default_shell=default_shell,
         default_timeout=default_timeout,
         container_id=container_id,
+        cwd=cwd,
         allowed_origins=allowed_origins,
     )
     return server.app
@@ -191,6 +196,7 @@ def main():
     parser.add_argument(
         "--container-id", help="Docker container ID for containerized execution"
     )
+    parser.add_argument("--cwd", default="/workspace", help="Default working directory")
 
     # Common options
     parser.add_argument(
@@ -215,6 +221,7 @@ def main():
         default_shell=args.shell,
         default_timeout=args.timeout,
         container_id=args.container_id,
+        cwd=args.cwd,
     )
 
     logger.info(f"Starting Combined Sandbox Server on {args.host}:{args.port}")

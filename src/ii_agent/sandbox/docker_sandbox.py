@@ -77,9 +77,7 @@ class DockerSandbox:
             container = await asyncio.to_thread(
                 self.client.api.create_container,
                 image=self.config.image,
-                command="/bin/bash -l -c 'tail -f /dev/null'",
                 hostname="sandbox",
-                working_dir=self.config.work_dir,
                 host_config=host_config,
                 name=self.container_name,
                 labels={

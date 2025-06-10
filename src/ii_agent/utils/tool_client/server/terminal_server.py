@@ -58,6 +58,7 @@ class TerminalServer:
         default_shell: str = "/bin/bash",
         default_timeout: int = 10,
         container_id: Optional[str] = None,
+        cwd: Optional[str] = None,
         allowed_origins: Optional[List[str]] = None,
     ):
         self.app = FastAPI(
@@ -71,6 +72,7 @@ class TerminalServer:
             default_shell=default_shell,
             default_timeout=default_timeout,
             container_id=container_id,
+            cwd=cwd,
         )
 
         # Add CORS middleware
@@ -213,6 +215,7 @@ def create_app(
     default_shell: str = "/bin/bash",
     default_timeout: int = 10,
     container_id: Optional[str] = None,
+    cwd: Optional[str] = None,
     allowed_origins: Optional[List[str]] = None,
 ) -> FastAPI:
     """Factory function to create the terminal FastAPI app."""
@@ -220,6 +223,7 @@ def create_app(
         default_shell=default_shell,
         default_timeout=default_timeout,
         container_id=container_id,
+        cwd=cwd,
         allowed_origins=allowed_origins,
     )
     return server.app
@@ -257,6 +261,7 @@ def main():
         default_shell=args.shell,
         default_timeout=args.timeout,
         container_id=args.container_id,
+        cwd=args.cwd,
     )
 
     logger.info(f"Starting Terminal Server on {args.host}:{args.port}")

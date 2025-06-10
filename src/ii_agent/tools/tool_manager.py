@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from ii_agent.llm.base import LLMClient
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
 from ii_agent.llm.token_counter import TokenCounter
+from ii_agent.sandbox.config import SandboxSettings
 from ii_agent.tools.advanced_tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
@@ -25,7 +26,6 @@ from ii_agent.tools.memory.simple_memory import SimpleMemoryTool
 from ii_agent.tools.slide_deck_tool import SlideDeckInitTool, SlideDeckCompleteTool
 from ii_agent.tools.web_search_tool import WebSearchTool
 from ii_agent.tools.visit_webpage_tool import VisitWebpageTool
-from ii_agent.tools.str_replace_tool import StrReplaceEditorTool
 from ii_agent.tools.str_replace_tool_relative import (
     StrReplaceEditorTool as StrReplaceEditorToolRelative,
 )
@@ -78,9 +78,15 @@ def get_system_tools(
     """
     terminal_config = None
     if container_id is not None:
+        sandbox_settings = SandboxSettings()
         terminal_config = TerminalClientConfig(
             mode="remote",
             server_url=f"http://{container_id}:17300",
+            cwd=sandbox_settings.work_dir,
+        )
+    else:
+        terminal_config = TerminalClientConfig(
+            mode="local", cwd=workspace_manager.root.absolute()
         )
     terminal_client = TerminalClient(terminal_config)
 
@@ -120,16 +126,26 @@ def get_system_tools(
             expand_tabs=False,
         )
         tools.append(
-            StrReplaceEditorTool(message_queue=message_queue, client_config=config)
+            StrReplaceEditorToolRelative(
+                workspace_manager=workspace_manager,
+                message_queue=message_queue,
+                client_config=config,
+            )
         )
     else:
         tools.append(StaticDeployTool(workspace_manager=workspace_manager))
+        config = StrReplaceClientConfig(
+            mode="local",
+            ignore_indentation_for_str_replace=False,
+            expand_tabs=False,
+        )
         tools.append(
             StrReplaceEditorToolRelative(
-                workspace_manager=workspace_manager, message_queue=message_queue
+                workspace_manager=workspace_manager,
+                message_queue=message_queue,
+                client_config=config,
             )
         )
-
     image_search_tool = ImageSearchTool()
     if image_search_tool.is_available():
         tools.append(image_search_tool)
