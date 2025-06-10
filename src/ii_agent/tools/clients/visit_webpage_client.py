@@ -1,5 +1,5 @@
 import requests
-from .utils import truncate_content
+from ..utils import truncate_content
 import os
 import json
 

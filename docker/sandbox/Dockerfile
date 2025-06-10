@@ -7,4 +7,12 @@ RUN apt-get update && apt-get install -y \
     git \
     net-tools
 
-RUN echo 'export PS1="[CMD_BEGIN]\\n\\u@\\h:\\w\\n[CMD_END]"; export PS2=""' >> /root/.bashrc
+#RUN echo 'export PS1="[CMD_BEGIN]\\n\\u@\\h:\\w\\n[CMD_END]"; export PS2=""' >> /root/.bashrc
+
+COPY src/ii_agent/utils/tool_client /app/ii_client
+
+WORKDIR /workspace
+
+RUN pip install -r ii_client/requirements.txt
+
+CMD ["python", "-m", "ii_client.sandbox_server", "--port", "17300"]

@@ -44,6 +44,7 @@ class PexpectSessionManager:
         self,
         default_shell: str = "/bin/bash",
         default_timeout: int = 10,
+        cwd: str = None,
         container_id: Optional[str] = None,
     ):
         self.default_shell = default_shell
@@ -56,6 +57,7 @@ class PexpectSessionManager:
         self.end_pattern = r"\[CMD_END\]"
         self.base_cmd = None
         self.container_id = container_id
+        self.cwd = cwd
         # ANSI escape sequence regex pattern
         self.ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
@@ -204,6 +206,8 @@ class PexpectSessionManager:
             if self.container_id:
                 # Create persistent shell session inside Docker container
                 docker_cmd = f"docker exec -it {self.container_id} {self.default_shell}"
+                if self.cwd:
+                    docker_cmd += f" -c {self.cwd}"
                 child = pexpect.spawn(
                     docker_cmd,
                     encoding="utf-8",

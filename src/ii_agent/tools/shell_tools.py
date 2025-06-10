@@ -4,7 +4,7 @@ from ii_agent.tools.base import (
     LLMTool,
 )
 from ii_agent.llm.message_history import MessageHistory
-from ii_agent.tools.terminal_manager import PexpectSessionManager
+from ii_agent.tools.clients.terminal_client import TerminalClient
 
 
 class ShellExecTool(LLMTool):
@@ -32,9 +32,9 @@ class ShellExecTool(LLMTool):
         "required": ["session_id", "command", "exec_dir"],
     }
 
-    def __init__(self, session_manager: PexpectSessionManager):
+    def __init__(self, terminal_client: TerminalClient):
         super().__init__()
-        self.session_manager = session_manager
+        self.terminal_client = terminal_client
 
     def run_impl(
         self,
@@ -45,7 +45,7 @@ class ShellExecTool(LLMTool):
         command = tool_input["command"]
         exec_dir = tool_input["exec_dir"]
 
-        result = self.session_manager.shell_exec(
+        result = self.terminal_client.shell_exec(
             session_id, command, exec_dir, timeout=30
         )
         if result.success:
@@ -77,9 +77,9 @@ class ShellViewTool(LLMTool):
         "required": ["session_id"],
     }
 
-    def __init__(self, session_manager: PexpectSessionManager):
+    def __init__(self, terminal_client: TerminalClient):
         super().__init__()
-        self.session_manager = session_manager
+        self.terminal_client = terminal_client
 
     def run_impl(
         self,
@@ -88,7 +88,7 @@ class ShellViewTool(LLMTool):
     ) -> ToolImplOutput:
         session_id = tool_input["session_id"]
 
-        result = self.session_manager.shell_view(session_id)
+        result = self.terminal_client.shell_view(session_id)
         if result.success:
             return ToolImplOutput(
                 result.output,
@@ -121,9 +121,9 @@ class ShellWaitTool(LLMTool):
         "required": ["session_id", "seconds"],
     }
 
-    def __init__(self, session_manager: PexpectSessionManager):
+    def __init__(self, terminal_client: TerminalClient):
         super().__init__()
-        self.session_manager = session_manager
+        self.terminal_client = terminal_client
 
     def run_impl(
         self,
@@ -133,7 +133,7 @@ class ShellWaitTool(LLMTool):
         session_id = tool_input["session_id"]
         seconds = tool_input["seconds"]
 
-        result = self.session_manager.shell_wait(session_id, seconds)
+        result = self.terminal_client.shell_wait(session_id, seconds)
         if result.success:
             return ToolImplOutput(
                 f"Waited for {seconds} seconds in session {session_id}",
@@ -162,9 +162,9 @@ class ShellKillProcessTool(LLMTool):
         "required": ["session_id"],
     }
 
-    def __init__(self, session_manager: PexpectSessionManager):
+    def __init__(self, terminal_client: TerminalClient):
         super().__init__()
-        self.session_manager = session_manager
+        self.terminal_client = terminal_client
 
     def run_impl(
         self,
@@ -172,7 +172,7 @@ class ShellKillProcessTool(LLMTool):
         message_history: Optional[MessageHistory] = None,
     ) -> ToolImplOutput:
         session_id = tool_input["session_id"]
-        result = self.session_manager.shell_kill_process(session_id)
+        result = self.terminal_client.shell_kill_process(session_id)
         if result.success:
             return ToolImplOutput(
                 result.output,
@@ -201,17 +201,17 @@ class ShellWriteToProcessTool(LLMTool):
                 "type": "string",
                 "description": "Text to write to the process",
             },
-            "enter": {
+            "press_enter": {
                 "type": "boolean",
                 "description": "Whether to press enter after writing the text",
             },
         },
-        "required": ["session_id", "input", "enter"],
+        "required": ["session_id", "input", "press_enter"],
     }
 
-    def __init__(self, session_manager: PexpectSessionManager):
+    def __init__(self, terminal_client: TerminalClient):
         super().__init__()
-        self.session_manager = session_manager
+        self.terminal_client = terminal_client
 
     def run_impl(
         self,
@@ -220,9 +220,9 @@ class ShellWriteToProcessTool(LLMTool):
     ) -> ToolImplOutput:
         session_id = tool_input["session_id"]
         input_text = tool_input["input"]
-        enter = tool_input["enter"]
-        result = self.session_manager.shell_write_to_process(
-            session_id, input_text, enter
+        press_enter = tool_input["press_enter"]
+        result = self.terminal_client.shell_write_to_process(
+            session_id, input_text, press_enter
         )
         if result.success:
             return ToolImplOutput(
@@ -235,7 +235,14 @@ class ShellWriteToProcessTool(LLMTool):
                 f"Failed to write to process in session {session_id}: {result.output}",
             )
 
-    if __name__ == "__main__":
-        session_manager = PexpectSessionManager(container_id="f85f9314eb4b")
-        result = session_manager.shell_exec("session_1", "ls", exec_dir="/", timeout=5)
-        result = session_manager.shell_view("session_1")
+
+if __name__ == "__main__":
+    from ii_agent.tools.clients.terminal_client import TerminalClientConfig
+
+    terminal_client = TerminalClient(TerminalClientConfig())
+    result = terminal_client.shell_exec("session_1", "ls", exec_dir=".", timeout=5)
+    print("--------------------------------")
+    print(result.output)
+    result = terminal_client.shell_exec("session_1", "cd ..", exec_dir=".", timeout=5)
+    print("--------------------------------")
+    print(result.output)

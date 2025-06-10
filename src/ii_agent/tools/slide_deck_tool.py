@@ -3,7 +3,7 @@ import os
 from ii_agent.llm.message_history import MessageHistory
 from ii_agent.sandbox.config import SandboxSettings
 from ii_agent.tools.base import LLMTool, ToolImplOutput
-from ii_agent.tools.terminal_manager import PexpectSessionManager
+from ii_agent.tools.clients.terminal_client import TerminalClient
 from ii_agent.utils.workspace_manager import WorkspaceManager
 
 
@@ -19,10 +19,10 @@ class SlideDeckInitTool(LLMTool):
     def __init__(
         self,
         workspace_manager: WorkspaceManager,
-        session_manager: PexpectSessionManager,
+        terminal_client: TerminalClient,
     ) -> None:
         super().__init__()
-        self.session_manager = session_manager
+        self.terminal_client = terminal_client
         self.workspace_manager = workspace_manager
         self.sandbox_settings = SandboxSettings()
 
@@ -38,7 +38,7 @@ class SlideDeckInitTool(LLMTool):
 
             # Clone the reveal.js repository to the specified path
             clone_command = "git clone https://github.com/khoangothe/reveal.js.git presentation/reveal.js"
-            clone_result = self.session_manager.shell_exec(
+            clone_result = self.terminal_client.shell_exec(
                 self.sandbox_settings.system_shell,
                 clone_command,
                 exec_dir=self.sandbox_settings.work_dir,
@@ -54,7 +54,7 @@ class SlideDeckInitTool(LLMTool):
 
             # Install dependencies
             install_command = "npm install"
-            install_result = self.session_manager.shell_exec(
+            install_result = self.terminal_client.shell_exec(
                 self.sandbox_settings.system_shell,
                 install_command,
                 exec_dir=f"{self.sandbox_settings.work_dir}/presentation/reveal.js",

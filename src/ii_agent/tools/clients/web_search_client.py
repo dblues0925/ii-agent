@@ -2,7 +2,7 @@ import json
 import os
 import requests
 import urllib
-from .utils import truncate_content
+from ..utils import truncate_content
 
 
 class BaseSearchClient:

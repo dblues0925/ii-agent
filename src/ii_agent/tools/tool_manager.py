@@ -9,6 +9,7 @@ from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.tools.advanced_tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
+from ii_agent.tools.clients.str_replace_client import StrReplaceClientConfig
 from ii_agent.tools.register_deployment import RegisterDeploymentTool
 from ii_agent.tools.shell_tools import (
     ShellExecTool,
@@ -18,13 +19,16 @@ from ii_agent.tools.shell_tools import (
     ShellWriteToProcessTool,
 )
 from ii_agent.tools.static_deploy_tool import StaticDeployTool
-from ii_agent.tools.terminal_manager import PexpectSessionManager
+from ii_agent.tools.clients.terminal_client import TerminalClient, TerminalClientConfig
 from ii_agent.tools.memory.compactify_memory import CompactifyMemoryTool
 from ii_agent.tools.memory.simple_memory import SimpleMemoryTool
 from ii_agent.tools.slide_deck_tool import SlideDeckInitTool, SlideDeckCompleteTool
 from ii_agent.tools.web_search_tool import WebSearchTool
 from ii_agent.tools.visit_webpage_tool import VisitWebpageTool
-from ii_agent.tools.str_replace_tool_relative import StrReplaceEditorTool
+from ii_agent.tools.str_replace_tool import StrReplaceEditorTool
+from ii_agent.tools.str_replace_tool_relative import (
+    StrReplaceEditorTool as StrReplaceEditorToolRelative,
+)
 from ii_agent.tools.sequential_thinking_tool import SequentialThinkingTool
 from ii_agent.tools.message_tool import MessageTool
 from ii_agent.tools.complete_tool import CompleteTool, ReturnControlToUserTool
@@ -72,7 +76,13 @@ def get_system_tools(
     Returns:
         list[LLMTool]: A list of all system tools.
     """
-    session_manager = PexpectSessionManager(container_id=container_id)
+    terminal_config = None
+    if container_id is not None:
+        terminal_config = TerminalClientConfig(
+            mode="remote",
+            server_url=f"http://{container_id}:17300",
+        )
+    terminal_client = TerminalClient(terminal_config)
 
     logger = logging.getLogger("presentation_context_manager")
     context_manager = LLMSummarizingContextManager(
@@ -86,18 +96,15 @@ def get_system_tools(
         MessageTool(),
         WebSearchTool(),
         VisitWebpageTool(),
-        StrReplaceEditorTool(
-            workspace_manager=workspace_manager, message_queue=message_queue
-        ),
-        ShellExecTool(session_manager=session_manager),
-        ShellViewTool(session_manager=session_manager),
-        ShellWaitTool(session_manager=session_manager),
-        ShellWriteToProcessTool(session_manager=session_manager),
-        ShellKillProcessTool(session_manager=session_manager),
+        ShellExecTool(terminal_client=terminal_client),
+        ShellViewTool(terminal_client=terminal_client),
+        ShellWaitTool(terminal_client=terminal_client),
+        ShellWriteToProcessTool(terminal_client=terminal_client),
+        ShellKillProcessTool(terminal_client=terminal_client),
         ListHtmlLinksTool(workspace_manager=workspace_manager),
         SlideDeckInitTool(
             workspace_manager=workspace_manager,
-            session_manager=session_manager,
+            terminal_client=terminal_client,
         ),
         SlideDeckCompleteTool(
             workspace_manager=workspace_manager,
@@ -106,8 +113,22 @@ def get_system_tools(
     ]
     if container_id is not None:
         tools.append(RegisterDeploymentTool(workspace_manager=workspace_manager))
+        config = StrReplaceClientConfig(
+            mode="remote",
+            server_url=f"http://{container_id}:17300",
+            ignore_indentation_for_str_replace=False,
+            expand_tabs=False,
+        )
+        tools.append(
+            StrReplaceEditorTool(message_queue=message_queue, client_config=config)
+        )
     else:
         tools.append(StaticDeployTool(workspace_manager=workspace_manager))
+        tools.append(
+            StrReplaceEditorToolRelative(
+                workspace_manager=workspace_manager, message_queue=message_queue
+            )
+        )
 
     image_search_tool = ImageSearchTool()
     if image_search_tool.is_available():
