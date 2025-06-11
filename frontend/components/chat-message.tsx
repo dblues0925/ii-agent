@@ -27,6 +27,7 @@ interface ChatMessageProps {
   handleCancel: () => void;
   handleEditMessage: (newQuestion: string) => void;
   processAllEventsImmediately?: () => void;
+  connectWebSocket: () => void;
 }
 
 const ChatMessage = ({
@@ -40,11 +41,11 @@ const ChatMessage = ({
   handleCancel,
   handleEditMessage,
   processAllEventsImmediately,
+  connectWebSocket,
 }: ChatMessageProps) => {
   const { state, dispatch } = useAppContext();
   const [showQuestionInput, setShowQuestionInput] = useState(false);
 
-  // Add useEffect to detect when loading is complete
   useEffect(() => {
     if (isReplayMode && !state.isLoading && state.messages.length > 0) {
       // If we're in replay mode, loading is complete, and we have messages,
@@ -79,6 +80,12 @@ const ChatMessage = ({
   const handleSetEditingMessage = (message?: Message) => {
     dispatch({ type: "SET_EDITING_MESSAGE", payload: message });
   };
+
+  useEffect(() => {
+    if (isReplayMode && showQuestionInput) {
+      connectWebSocket();
+    }
+  }, [isReplayMode, showQuestionInput]);
 
   return (
     <div className="col-span-4">

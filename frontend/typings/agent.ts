@@ -24,6 +24,7 @@ export type Source = {
 };
 
 export enum AgentEvent {
+  AGENT_INITIALIZED = "agent_initialized",
   USER_MESSAGE = "user_message",
   CONNECTION_ESTABLISHED = "connection_established",
   WORKSPACE_INFO = "workspace_info",

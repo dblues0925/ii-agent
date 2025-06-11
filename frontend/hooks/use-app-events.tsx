@@ -51,6 +51,9 @@ export function useAppEvents({
       ignoreClickAction?: boolean
     ) => {
       switch (data.type) {
+        case AgentEvent.AGENT_INITIALIZED:
+          break;
+
         case AgentEvent.USER_MESSAGE:
           safeDispatch({
             type: "ADD_MESSAGE",

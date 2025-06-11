@@ -64,7 +64,7 @@ export default function HomeContent() {
   });
 
   // Use the WebSocket hook
-  const { socket, sendMessage } = useWebSocket(
+  const { socket, sendMessage, connectWebSocket } = useWebSocket(
     deviceId,
     isReplayMode,
     handleEvent
@@ -124,8 +124,8 @@ export default function HomeContent() {
 
     const { thinking_tokens, ...tool_args } = state.toolSettings;
 
-    // send init agent event when first query
-    if (!sessionId) {
+    // Only send init_agent event if agent is not already initialized
+    if (!state.isAgentInitialized) {
       sendMessage({
         type: "init_agent",
         content: {
@@ -385,6 +385,7 @@ export default function HomeContent() {
                   handleCancel={handleCancelQuery}
                   handleEditMessage={handleEditMessage}
                   processAllEventsImmediately={processAllEventsImmediately}
+                  connectWebSocket={connectWebSocket}
                 />
 
                 <div className="col-span-6 bg-[#1e1f23] border border-[#3A3B3F] p-4 rounded-2xl">
