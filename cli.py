@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from ii_agent.core.event import RealtimeEvent, EventType
-from ii_agent.utils.constants import DEFAULT_MODEL
+from ii_agent.utils.constants import TOKEN_BUDGET
 from utils import parse_common_args, create_workspace_manager_for_connection
 from rich.console import Console
 from rich.panel import Panel
@@ -28,9 +28,6 @@ from ii_agent.agents.reviewer import ReviewerAgent
 from ii_agent.utils import WorkspaceManager
 from ii_agent.llm import get_client
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
-from ii_agent.llm.context_manager.amortized_forgetting import (
-    AmortizedForgettingContextManager,
-)
 from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.db.manager import DatabaseManager
 
@@ -96,12 +93,20 @@ async def async_main():
         )
 
     # Initialize LLM client
+    client_kwargs = {
+        "model_name": args.model_name,
+    }
+    if args.llm_client == "anthropic-direct":
+        client_kwargs["use_caching"] = False # Or a configurable value if needed later
+        client_kwargs["project_id"] = args.project_id
+        client_kwargs["region"] = args.region
+    elif args.llm_client == "openai-direct":
+        client_kwargs["azure_model"] = args.azure_model
+        client_kwargs["cot_model"] = args.cot_model
+    
     client = get_client(
-        "anthropic-direct",
-        model_name=DEFAULT_MODEL,
-        use_caching=False,
-        project_id=args.project_id,
-        region=args.region,
+        args.llm_client,
+        **client_kwargs
     )
 
     # Initialize workspace manager with the session-specific workspace
@@ -113,21 +118,12 @@ async def async_main():
     token_counter = TokenCounter()
 
     # Create context manager based on argument
-    if args.context_manager == "llm-summarizing":
-        context_manager = LLMSummarizingContextManager(
-            client=client,
-            token_counter=token_counter,
-            logger=logger_for_agent_logs,
-            token_budget=120_000,
-        )
-    elif args.context_manager == "amortized-forgetting":
-        context_manager = AmortizedForgettingContextManager(
-            token_counter=token_counter,
-            logger=logger_for_agent_logs,
-            token_budget=120_000,
-        )
-    else:
-        raise ValueError(f"Unknown context manager type: {args.context_manager}")
+    context_manager = LLMSummarizingContextManager(
+        client=client,
+        token_counter=token_counter,
+        logger=logger_for_agent_logs,
+        token_budget=TOKEN_BUDGET
+    )
 
     queue = asyncio.Queue()
     tools = get_system_tools(
@@ -192,7 +188,10 @@ async def async_main():
     try:
         while True:
             # Use async input
-            user_input = await loop.run_in_executor(None, lambda: input("User input: "))
+            if args.prompt is None:
+                user_input = await loop.run_in_executor(None, lambda: input("User input: "))
+            else:
+                user_input = args.prompt
 
             agent.message_queue.put_nowait(
                 RealtimeEvent(type=EventType.USER_MESSAGE, content={"text": user_input})

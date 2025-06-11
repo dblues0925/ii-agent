@@ -5,11 +5,18 @@ export enum TAB {
 }
 
 export const AVAILABLE_MODELS = [
-  "claude-3-7-sonnet@20250219",
   "claude-sonnet-4@20250514",
   "claude-opus-4@20250514",
-  // "gemini-2.5-pro-preview-05-06",
+  "claude-3-7-sonnet@20250219",
+  "gemini-2.5-pro-preview-05-06",
+  "gpt-4.1",
 ];
+
+export enum WebSocketConnectionState {
+  CONNECTING = "connecting",
+  CONNECTED = "connected",
+  DISCONNECTED = "disconnected",
+}
 
 export type Source = {
   title: string;
@@ -51,10 +58,16 @@ export enum TOOL {
   AUDIO_TRANSCRIBE = "audio_transcribe",
   GENERATE_AUDIO_RESPONSE = "generate_audio_response",
   VIDEO_GENERATE = "generate_video_from_text",
+  VIDEO_GENERATE_FROM_IMAGE = "generate_video_from_image",
+  LONG_VIDEO_GENERATE = "generate_long_video_from_text",
+  LONG_VIDEO_GENERATE_FROM_IMAGE = "generate_long_video_from_image",
   IMAGE_GENERATE = "generate_image_from_text",
   DEEP_RESEARCH = "deep_research",
   LIST_HTML_LINKS = "list_html_links",
   RETURN_CONTROL_TO_USER = "return_control_to_user",
+  SLIDE_DECK_INIT = "slide_deck_init",
+  SLIDE_DECK_COMPLETE = "slide_deck_complete",
+
   // browser tools
   BROWSER_VIEW = "browser_view",
   BROWSER_NAVIGATION = "browser_navigation",
@@ -134,4 +147,16 @@ export interface ToolSettings {
   media_generation: boolean;
   audio_generation: boolean;
   browser: boolean;
+  thinking_tokens: number;
+}
+export interface GooglePickerResponse {
+  action: string;
+  docs?: Array<GoogleDocument>;
+}
+
+export interface GoogleDocument {
+  id: string;
+  name: string;
+  thumbnailUrl: string;
+  mimeType: string;
 }

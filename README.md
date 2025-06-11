@@ -7,13 +7,19 @@
 # II Agent
 
 [![GitHub stars](https://img.shields.io/github/stars/Intelligent-Internet/ii-agent?style=social)](https://github.com/Intelligent-Internet/ii-agent/stargazers)
+[![Discord Follow](https://dcbadge.limes.pink/api/server/yDWPsshPHB?style=flat)](https://discord.gg/yDWPsshPHB)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Blog](https://img.shields.io/badge/Blog-II--Agent-blue)](https://ii.inc/web/blog/post/ii-agent)
 [![GAIA Benchmark](https://img.shields.io/badge/GAIA-Benchmark-green)](https://ii-agent-gaia.ii.inc/)
+[<img src="https://devin.ai/assets/deepwiki-badge.png" alt="Ask DeepWiki.com" height="20"/>](https://deepwiki.com/Intelligent-Internet/ii-agent)
+
 </div>
 
 II-Agent is an open-source intelligent assistant designed to streamline and enhance workflows across multiple domains. It represents a significant advancement in how we interact with technology—shifting from passive tools to intelligent systems capable of independently executing complex tasks.
 
+### Discord Join US
+
+📢 Join Our [Discord Channel](https://discord.gg/yDWPsshPHB)! Looking forward to seeing you there! 🎉
 
 
 ## Introduction
@@ -22,11 +28,13 @@ https://github.com/user-attachments/assets/d0eb7440-a6e2-4276-865c-a1055181bb33
 
 ## Overview
 
-II Agent is built around providing an agentic interface to Anthropic Claude models. It offers:
+II Agent is built around providing an agentic interface to leading language models. It offers:
 
 - A CLI interface for direct command-line interaction
 - A WebSocket server that powers a modern React-based frontend
-- Integration with Google Cloud's Vertex AI for API access to Anthropic models
+- Integration with multiple LLM providers:
+  - Anthropic Claude models (direct API or via Google Cloud Vertex AI)
+  - Google Gemini models (direct API or via Google Cloud Vertex AI)
 
 ## Core Capabilities
 
@@ -95,11 +103,20 @@ You can view the full traces of some samples here: [GAIA Benchmark Traces](https
 - Docker Compose
 - Python 3.10+
 - Node.js 18+ (for frontend)
-- Google Cloud project with Vertex AI API enabled or Anthropic API key
+- At least one of the following:
+  - Anthropic API key, or
+  - Google Gemini API key, or  
+  - Google Cloud project with Vertex AI API enabled
+
+## Best Practices:
+- For best performance, we recommend using Claude 4.0 Sonnet or Claude Opus 4.0 models.
+- For fast and cheap, we recommend using GPT4.1 from OpenAI.
+- Gemini 2.5 Pro is a good balance between performance and cost.
 
 ## Environment
 
 You need to set up 2 `.env` files to run both frontend and backend
+**Shortcut:** Check file `.env.example` for example of `.env` file.
 
 ### Frontend Environment Variables
 
@@ -111,11 +128,20 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ### Backend Environment Variables
 
-For the back end, create a `.env` file in the root directory with the following variables. Here are the required variables needed to run this project:
+For the backend, create a `.env` file in the root directory with the following variables. Here are the required variables needed to run this project:
+
 
 ```bash
-# Anthropic Key for Claude
-ANTHROPIC_API_KEY=
+# Required API Keys - Choose one based on your LLM provider:
+# Option 1: For Claude models via Anthropic
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# Option 2: For Gemini models via Google
+GEMINI_API_KEY=your_gemini_key
+
+# Option 3: For OpenAI models
+OPENAI_API_KEY=your_openai_key
+
 # Search Provider API Key
 TAVILY_API_KEY=your_tavily_key
 
@@ -129,10 +155,11 @@ FIRECRAWL_API_KEY=your_firecrawl_key
 SERPAPI_API_KEY=your_serpapi_key 
 ```
 
-Enabling Image and Video Generation Tool (Optional, good for more creative output)
+We are supporting image generation and video generation tool by Vertex AI (Optional, good for more creative output), to use this, you need to set up the following variables:
 ```bash
-OPENAI_API_KEY=your_openai_key
-OPENAI_AZURE_ENDPOINT=your_azure_endpoint
+MEDIA_GCS_OUTPUT_BUCKET=gs://your_bucket_here
+MEDIA_GCP_PROJECT_ID=your_vertex_project_id
+MEDIA_GCP_LOCATION=your_vertex_location
 ```
 
 Image Search Tool  (Optional, good for more beautiful output)
@@ -236,7 +263,7 @@ npm run dev
 
 ## Conclusion
 
-The II-Agent framework, architected around the reasoning capabilities of large language models like Claude 3.7 Sonnet, presents a comprehensive and robust methodology for building versatile AI agents. Through its synergistic combination of a powerful LLM, a rich set of execution capabilities, an explicit mechanism for planning and reflection, and intelligent context management strategies, II-Agent is well-equipped to address a wide spectrum of complex, multi-step tasks. Its open-source nature and extensible design provide a strong foundation for continued research and development in the rapidly evolving field of agentic AI.
+The II-Agent framework, architected around the reasoning capabilities of large language models like Claude 4.0 Sonnet or Gemini 2.5 Pro, presents a comprehensive and robust methodology for building versatile AI agents. Through its synergistic combination of a powerful LLM, a rich set of execution capabilities, an explicit mechanism for planning and reflection, and intelligent context management strategies, II-Agent is well-equipped to address a wide spectrum of complex, multi-step tasks. Its open-source nature and extensible design provide a strong foundation for continued research and development in the rapidly evolving field of agentic AI.
 
 ## Acknowledgement
 

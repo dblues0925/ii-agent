@@ -65,6 +65,9 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
       case TOOL.GENERATE_AUDIO_RESPONSE:
         return <AudioLines className={className} />;
       case TOOL.VIDEO_GENERATE:
+      case TOOL.VIDEO_GENERATE_FROM_IMAGE:
+      case TOOL.LONG_VIDEO_GENERATE:
+      case TOOL.LONG_VIDEO_GENERATE_FROM_IMAGE:
         return <Video className={className} />;
       case TOOL.IMAGE_GENERATE:
         return <ImageIcon className={className} />;
@@ -135,6 +138,12 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return "Generating Audio";
       case TOOL.VIDEO_GENERATE:
         return "Generating Video";
+      case TOOL.VIDEO_GENERATE_FROM_IMAGE:
+        return "Generating Video from Image";
+      case TOOL.LONG_VIDEO_GENERATE:
+        return "Generating Long Video from Text";
+      case TOOL.LONG_VIDEO_GENERATE_FROM_IMAGE:
+        return "Generating Long Video from Image";
       case TOOL.IMAGE_GENERATE:
         return "Generating Image";
       case TOOL.DEEP_RESEARCH:
@@ -209,8 +218,10 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return value.tool_input?.output_filename === workspaceInfo
           ? workspaceInfo
           : value.tool_input?.output_filename?.replace(workspaceInfo, "");
-
       case TOOL.VIDEO_GENERATE:
+      case TOOL.VIDEO_GENERATE_FROM_IMAGE:
+      case TOOL.LONG_VIDEO_GENERATE:
+      case TOOL.LONG_VIDEO_GENERATE_FROM_IMAGE:
         return value.tool_input?.output_filename === workspaceInfo
           ? workspaceInfo
           : value.tool_input?.output_filename?.replace(workspaceInfo, "");
@@ -256,10 +267,13 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
   }, [type, value, workspaceInfo]);
 
   if (
+    !type ||
     type === TOOL.COMPLETE ||
     type === TOOL.BROWSER_VIEW ||
     type === TOOL.LIST_HTML_LINKS ||
-    type === TOOL.RETURN_CONTROL_TO_USER
+    type === TOOL.RETURN_CONTROL_TO_USER ||
+    type === TOOL.SLIDE_DECK_INIT ||
+    type === TOOL.SLIDE_DECK_COMPLETE
   )
     return null;
 

@@ -35,7 +35,7 @@ from sqlalchemy import asc, text
 
 from ii_agent.core.event import RealtimeEvent, EventType
 from ii_agent.db.models import Event
-from ii_agent.utils.constants import DEFAULT_MODEL, UPLOAD_FOLDER_NAME
+from ii_agent.utils.constants import DEFAULT_MODEL, TOKEN_BUDGET, UPLOAD_FOLDER_NAME
 from utils import parse_common_args, create_workspace_manager_for_connection
 from ii_agent.agents.anthropic_fc import AnthropicFC
 from ii_agent.agents.base import BaseAgent
@@ -48,9 +48,6 @@ from ii_agent.utils.prompt_generator import enhance_user_prompt
 from fastapi.staticfiles import StaticFiles
 
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
-from ii_agent.llm.context_manager.amortized_forgetting import (
-    AmortizedForgettingContextManager,
-)
 from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.db.manager import DatabaseManager
 from ii_agent.tools import get_system_tools
@@ -94,6 +91,46 @@ message_processors: Dict[WebSocket, asyncio.Task] = {}
 global_args = None
 
 
+def map_model_name_to_client(model_name: str, ws_content: Dict[str, Any]) -> LLMClient:
+    """Create an LLM client based on the model name and configuration.
+    
+    Args:
+        model_name: The name of the model to use
+        ws_content: Dictionary containing configuration options like thinking_tokens
+        
+    Returns:
+        LLMClient: Configured LLM client instance
+        
+    Raises:
+        ValueError: If the model name is not supported
+    """
+    if "claude" in model_name:
+        return get_client(
+            "anthropic-direct",
+            model_name=model_name,
+            use_caching=False,
+            project_id=global_args.project_id,
+            region=global_args.region,
+            thinking_tokens=ws_content['tool_args']['thinking_tokens'],
+        )
+    elif "gemini" in model_name:
+        return get_client(
+            "gemini-direct",
+            model_name=model_name,
+            project_id=global_args.project_id,
+            region=global_args.region,
+        )
+    elif model_name in ["o3", "o4-mini", "gpt-4.1", "gpt-4o"]:
+        return get_client(
+            "openai-direct",
+            model_name=model_name,
+            azure_model=ws_content.get("azure_model", True),
+            cot_model=ws_content.get("cot_model", False),
+        )
+    else:
+        raise ValueError(f"Unknown model name: {model_name}")
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -128,14 +165,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 if msg_type == "init_agent":
                     model_name = content.get("model_name", DEFAULT_MODEL)
                     # Initialize LLM client
-                    client = get_client(
-                        "anthropic-direct",
-                        model_name=model_name,
-                        use_caching=False,
-                        project_id=global_args.project_id,
-                        region=global_args.region,
-                        thinking_tokens=content.get("thinking_tokens", 2048),
-                    )
+                    client = map_model_name_to_client(model_name, content)
 
                     # Create a new agent for this connection
                     tool_args = content.get("tool_args", {})
@@ -334,14 +364,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     user_input = content.get("text", "")
                     files = content.get("files", [])
                     # Initialize LLM client
-                    client = get_client(
-                        "anthropic-direct",
-                        model_name=model_name,
-                        use_caching=False,
-                        project_id=global_args.project_id,
-                        region=global_args.region,
-                        thinking_tokens=0, # Don't need thinking tokens for this
-                    )
+                    client = map_model_name_to_client(model_name, content)
+                    
                     # Call the enhance_prompt function from the module
                     success, message, enhanced_prompt = await enhance_user_prompt(
                         client=client,
@@ -555,21 +579,12 @@ def create_agent_for_connection(
     # Initialize token counter
     token_counter = TokenCounter()
 
-    if global_args.context_manager == "llm-summarizing":
-        context_manager = LLMSummarizingContextManager(
-            client=client,
-            token_counter=token_counter,
-            logger=logger_for_agent_logs,
-            token_budget=120_000,
-        )
-    elif global_args.context_manager == "amortized-forgetting":
-        context_manager = AmortizedForgettingContextManager(
-            token_counter=token_counter,
-            logger=logger_for_agent_logs,
-            token_budget=120_000,
-        )
-    else:
-        raise ValueError(f"Unknown context manager type: {global_args.context_manager}")
+    context_manager = LLMSummarizingContextManager(
+        client=client,
+        token_counter=token_counter,
+        logger=logger_for_agent_logs,
+        token_budget=TOKEN_BUDGET,
+    )
 
     # Initialize agent with websocket
     queue = asyncio.Queue()
