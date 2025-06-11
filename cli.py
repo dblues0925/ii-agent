@@ -34,7 +34,7 @@ MAX_TURNS = 200
 
 def get_max_tokens_for_client(client_type: str, model_name: str) -> int:
     """Get appropriate max tokens based on client and model."""
-    if client_type in ["gemini-direct", "gemini-xml"]:
+    if client_type == "gemini-direct":
         # Gemini models have lower token limits
         return 8192
     else:
@@ -110,9 +110,6 @@ async def async_main():
         client_kwargs["azure_model"] = args.azure_model
         client_kwargs["cot_model"] = args.cot_model
     elif args.llm_client == "gemini-direct":
-        client_kwargs["project_id"] = args.project_id
-        client_kwargs["region"] = args.region
-    elif args.llm_client == "gemini-xml":
         client_kwargs["project_id"] = args.project_id
         client_kwargs["region"] = args.region
     
