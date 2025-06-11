@@ -4,7 +4,9 @@ import uuid
 from typing import Dict, Any
 from fastapi import WebSocket
 
+from ii_agent.core.storage.files import FileStore
 from ii_agent.llm.base import LLMClient
+from ii_agent.llm.message_history import MessageHistory
 from ii_agent.utils import WorkspaceManager
 from ii_agent.agents.function_call import FunctionCallAgent
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
@@ -63,6 +65,7 @@ class AgentFactory:
         workspace_manager: WorkspaceManager,
         websocket: WebSocket,
         tool_args: Dict[str, Any],
+        file_store: FileStore,
     ):
         """Create a new agent instance for a websocket connection.
 
@@ -98,6 +101,7 @@ class AgentFactory:
             tool_args,
             context_manager,
             logger_for_agent_logs,
+            file_store,
         )
 
     def _setup_logger(self, websocket: WebSocket) -> logging.Logger:
@@ -151,6 +155,7 @@ class AgentFactory:
         tool_args: Dict[str, Any],
         context_manager,
         logger: logging.Logger,
+        file_store: FileStore,
     ):
         """Create the actual agent instance."""
         # Initialize agent queue and tools
@@ -171,6 +176,15 @@ class AgentFactory:
             else SYSTEM_PROMPT
         )
 
+        # try to get history from file store
+        try:
+            init_history = MessageHistory.restore_from_session(
+                session_id.hex(), file_store
+            )
+        except Exception as e:
+            logger.error(f"Error restoring history from file store: {e}")
+            init_history = MessageHistory(context_manager)
+
         agent = FunctionCallAgent(
             system_prompt=system_prompt,
             client=client,
@@ -178,7 +192,7 @@ class AgentFactory:
             workspace_manager=workspace_manager,
             message_queue=queue,
             logger_for_agent_logs=logger,
-            context_manager=context_manager,
+            init_history=init_history,
             max_output_tokens_per_turn=self.config.max_output_tokens_per_turn,
             max_turns=self.config.max_turns,
             websocket=websocket,

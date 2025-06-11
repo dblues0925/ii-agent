@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Modular FastAPI WebSocket Server for the Agent.
-
-This script provides a clean entry point for the refactored modular WebSocket server.
-"""
-
 import argparse
 import logging
 import uvicorn
@@ -45,4 +38,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

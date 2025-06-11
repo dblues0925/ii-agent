@@ -12,6 +12,8 @@ import logging
 import asyncio
 from dotenv import load_dotenv
 
+from ii_agent.llm.message_history import MessageHistory
+
 load_dotenv()
 
 from ii_agent.core.event import RealtimeEvent, EventType
@@ -95,17 +97,14 @@ async def async_main():
         "model_name": args.model_name,
     }
     if args.llm_client == "anthropic-direct":
-        client_kwargs["use_caching"] = False # Or a configurable value if needed later
+        client_kwargs["use_caching"] = False  # Or a configurable value if needed later
         client_kwargs["project_id"] = args.project_id
         client_kwargs["region"] = args.region
     elif args.llm_client == "openai-direct":
         client_kwargs["azure_model"] = args.azure_model
         client_kwargs["cot_model"] = args.cot_model
-    
-    client = get_client(
-        args.llm_client,
-        **client_kwargs
-    )
+
+    client = get_client(args.llm_client, **client_kwargs)
 
     # Initialize workspace manager with the session-specific workspace
     workspace_manager = WorkspaceManager(
@@ -120,8 +119,9 @@ async def async_main():
         client=client,
         token_counter=token_counter,
         logger=logger_for_agent_logs,
-        token_budget=TOKEN_BUDGET
+        token_budget=TOKEN_BUDGET,
     )
+    init_history = MessageHistory(context_manager)
 
     queue = asyncio.Queue()
     tools = get_system_tools(
@@ -146,7 +146,7 @@ async def async_main():
         tools=tools,
         message_queue=queue,
         logger_for_agent_logs=logger_for_agent_logs,
-        context_manager=context_manager,
+        init_history=init_history,
         max_output_tokens_per_turn=MAX_OUTPUT_TOKENS_PER_TURN,
         max_turns=MAX_TURNS,
         session_id=session_id,  # Pass the session_id from database manager
@@ -161,7 +161,9 @@ async def async_main():
         while True:
             # Use async input
             if args.prompt is None:
-                user_input = await loop.run_in_executor(None, lambda: input("User input: "))
+                user_input = await loop.run_in_executor(
+                    None, lambda: input("User input: ")
+                )
             else:
                 user_input = args.prompt
 

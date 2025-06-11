@@ -1,5 +1,9 @@
+import base64
 import json
+import pickle
 from typing import Optional, cast, Any
+from ii_agent.core.storage.files import FileStore
+from ii_agent.core.storage.locations import get_conversation_agent_state_filename
 from ii_agent.llm.base import (
     AssistantContentBlock,
     GeneralContentBlock,
@@ -100,6 +104,24 @@ class MessageHistory:
 
         return cleaned_turns
 
+    @classmethod
+    def restore_from_session(
+        cls, session_id: str, file_store: FileStore
+    ) -> "MessageHistory":
+        """Restores the message history from the file store."""
+        history: MessageHistory
+
+        try:
+            encoded = file_store.read(get_conversation_agent_state_filename(session_id))
+            pickled = base64.b64decode(encoded)
+            history = pickle.loads(pickled)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Could not restore history from file for session id: {session_id}"
+            )
+
+        return history
+
     def add_user_prompt(
         self, prompt: str, image_blocks: list[dict[str, Any]] | None = None
     ):
@@ -131,10 +153,14 @@ class MessageHistory:
                 has_tool_call = True
                 messages_with_one_tool_call.append(message)
             elif isinstance(message, ToolCall) and has_tool_call:
-                print("WARNING: Multiple tool calls in one turn are not supported, selecting the first tool call")
+                print(
+                    "WARNING: Multiple tool calls in one turn are not supported, selecting the first tool call"
+                )
             else:
                 messages_with_one_tool_call.append(message)
-        self._message_lists.append(cast(list[GeneralContentBlock], messages_with_one_tool_call))
+        self._message_lists.append(
+            cast(list[GeneralContentBlock], messages_with_one_tool_call)
+        )
 
     def get_messages_for_llm(self) -> LLMMessages:  # TODO: change name to get_messages
         """Returns messages formatted for the LLM client."""

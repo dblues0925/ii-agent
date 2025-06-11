@@ -8,9 +8,10 @@ from pydantic import ValidationError
 
 from ii_agent.agents.base import BaseAgent
 from ii_agent.core.event import RealtimeEvent, EventType
+from ii_agent.core.storage.files import FileStore
 from ii_agent.utils.prompt_generator import enhance_user_prompt
 from ii_agent.utils.workspace_manager import WorkspaceManager
-from ..models.messages import (
+from ii_agent.server.models.messages import (
     WebSocketMessage,
     QueryContent,
     InitAgentContent,
@@ -32,13 +33,14 @@ class ChatSession:
         session_uuid: uuid.UUID,
         client_factory: ClientFactory,
         agent_factory: AgentFactory,
+        file_store: FileStore,
     ):
         self.websocket = websocket
         self.workspace_manager = workspace_manager
         self.session_uuid = session_uuid
         self.client_factory = client_factory
         self.agent_factory = agent_factory
-
+        self.file_store = file_store
         # Session state
         self.agent: Optional[BaseAgent] = None
         self.active_task: Optional[asyncio.Task] = None
@@ -146,6 +148,7 @@ class ChatSession:
                 self.workspace_manager,
                 self.websocket,
                 init_content.tool_args,
+                self.file_store,
             )
 
             # Start message processor for this session

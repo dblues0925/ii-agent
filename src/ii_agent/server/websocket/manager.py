@@ -5,6 +5,7 @@ from typing import Dict, Optional
 
 from fastapi import WebSocket
 
+from ii_agent.core.storage.files import FileStore
 from ii_agent.server.websocket.chat_session import ChatSession
 from ii_agent.utils.workspace_manager import WorkspaceManager
 from ii_agent.server.factories import ClientFactory, AgentFactory
@@ -18,6 +19,7 @@ class ConnectionManager:
     def __init__(
         self,
         workspace_root: str,
+        file_store: FileStore,
         use_container_workspace: bool = False,
         client_factory: ClientFactory = None,
         agent_factory: AgentFactory = None,
@@ -28,13 +30,19 @@ class ConnectionManager:
         self.use_container_workspace = use_container_workspace
         self.client_factory = client_factory
         self.agent_factory = agent_factory
+        self.file_store = file_store
 
     async def connect(self, websocket: WebSocket) -> ChatSession:
         """Accept a new WebSocket connection and create a chat session."""
         await websocket.accept()
 
-        # Create workspace for this session
-        session_uuid = uuid.uuid4()
+        # Create workspace for this session if not provided
+        session_uuid = websocket.query_params.get("session_uuid")
+        if session_uuid is None:
+            session_uuid = uuid.uuid4()
+        else:
+            session_uuid = uuid.UUID(session_uuid)
+
         workspace_path = Path(self.workspace_root).resolve()
         connection_workspace = workspace_path / str(session_uuid)
         connection_workspace.mkdir(parents=True, exist_ok=True)
@@ -50,6 +58,7 @@ class ConnectionManager:
             session_uuid,
             self.client_factory,
             self.agent_factory,
+            self.file_store,
         )
         self.sessions[websocket] = session
 

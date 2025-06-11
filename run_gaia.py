@@ -24,6 +24,7 @@ import asyncio
 from ii_agent.db.models import Session, Event
 from ii_agent.agents.function_call import FunctionCallAgent
 from ii_agent.browser.browser import Browser
+from ii_agent.llm.message_history import MessageHistory
 from ii_agent.prompts.gaia_system_prompt import GAIA_SYSTEM_PROMPT
 from ii_agent.tools.bash_tool import BashTool
 from ii_agent.tools.browser_tools import (
@@ -299,6 +300,7 @@ async def answer_single_question(
     ]
 
     system_prompt = GAIA_SYSTEM_PROMPT
+    init_history = MessageHistory(context_manager)
 
     # Create agent instance for this question
     agent = FunctionCallAgent(
@@ -308,11 +310,11 @@ async def answer_single_question(
         workspace_manager=workspace_manager,
         message_queue=message_queue,
         logger_for_agent_logs=logger,
-        context_manager=context_manager,
+        init_history=init_history,
         max_output_tokens_per_turn=32768,
         max_turns=200,
         session_id=session_id,  # Pass the session_id from database manager
-        interactive_mode=False, # Run until the task is completed
+        interactive_mode=False,  # Run until the task is completed
     )
 
     # Create background task for message processing

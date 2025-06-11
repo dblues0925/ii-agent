@@ -3,23 +3,27 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from fastapi.staticfiles import StaticFiles
+
+from ii_agent.core.storage import get_file_store
 from .api import upload_router, sessions_router
 from ii_agent.server.websocket import ConnectionManager
 from ii_agent.server.factories import AgentFactory, AgentConfig, ClientFactory
+from ii_agent.core.config.utils import load_ii_agent_config
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(global_args) -> FastAPI:
+def create_app(args) -> FastAPI:
     """Create and configure the FastAPI application.
 
     Args:
-        global_args: Global configuration arguments
+        args: Configuration arguments
 
     Returns:
         FastAPI: Configured FastAPI application instance
     """
     app = FastAPI(title="Agent WebSocket API")
+    ii_agent_config = load_ii_agent_config()
 
     # Add CORS middleware
     app.add_middleware(
@@ -31,27 +35,28 @@ def create_app(global_args) -> FastAPI:
     )
 
     # Store global args in app state for access in endpoints
-    app.state.workspace = global_args.workspace
+    app.state.workspace = args.workspace
 
     # Create factory instances
-    client_factory = ClientFactory(
-        project_id=global_args.project_id, region=global_args.region
-    )
+    client_factory = ClientFactory(project_id=args.project_id, region=args.region)
 
     agent_config = AgentConfig(
-        logs_path=global_args.logs_path,
-        minimize_stdout_logs=global_args.minimize_stdout_logs,
-        docker_container_id=global_args.docker_container_id,
-        needs_permission=global_args.needs_permission,
+        logs_path=args.logs_path,
+        minimize_stdout_logs=args.minimize_stdout_logs,
+        docker_container_id=args.docker_container_id,
+        needs_permission=args.needs_permission,
     )
     agent_factory = AgentFactory(agent_config)
 
     # Create connection manager with injected dependencies
     connection_manager = ConnectionManager(
-        workspace_root=global_args.workspace,
-        use_container_workspace=global_args.use_container_workspace,
+        workspace_root=args.workspace,
+        use_container_workspace=args.use_container_workspace,
         client_factory=client_factory,
         agent_factory=agent_factory,
+        file_store=get_file_store(
+            ii_agent_config.file_store, ii_agent_config.file_store_path
+        ),
     )
 
     # Include API routers
@@ -59,7 +64,7 @@ def create_app(global_args) -> FastAPI:
     app.include_router(sessions_router)
 
     # Setup workspace static files
-    setup_workspace(app, global_args.workspace)
+    setup_workspace(app, args.workspace)
 
     # WebSocket endpoint
     @app.websocket("/ws")
