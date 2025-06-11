@@ -23,7 +23,6 @@ from rich.panel import Panel
 from ii_agent.tools import get_system_tools
 from ii_agent.prompts.system_prompt import SYSTEM_PROMPT
 from ii_agent.agents.anthropic_fc import AnthropicFC
-from ii_agent.agents.gemini_suna import GeminiSuna
 from ii_agent.utils import WorkspaceManager
 from ii_agent.llm import get_client
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
@@ -47,13 +46,6 @@ async def async_main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="CLI for interacting with the Agent")
     parser = parse_common_args(parser)
-    parser.add_argument(
-        "--agent-type",
-        type=str,
-        default="anthropic",
-        choices=["anthropic", "gemini-suna"],
-        help="Type of agent to use (default: anthropic)"
-    )
 
     args = parser.parse_args()
 
@@ -92,7 +84,6 @@ async def async_main():
         console.print(
             Panel(
                 "[bold]Agent CLI[/bold]\n\n"
-                + f"Agent Type: {args.agent_type}\n"
                 + f"Session ID: {session_id}\n"
                 + f"Workspace: {workspace_path}\n\n"
                 + "Type your instructions to the agent. Press Ctrl+C to exit.\n"
@@ -165,32 +156,19 @@ async def async_main():
     # Get appropriate max tokens for the selected client
     max_tokens = get_max_tokens_for_client(args.llm_client, args.model_name)
     
-    # Initialize agent based on type
-    if args.agent_type == "gemini-suna":
-        agent = GeminiSuna(
-            client=client,
-            tools=tools,
-            workspace_manager=workspace_manager,
-            message_queue=queue,
-            logger_for_agent_logs=logger_for_agent_logs,
-            context_manager=context_manager,
-            max_output_tokens_per_turn=max_tokens,
-            max_turns=MAX_TURNS,
-            session_id=session_id,
-        )
-    else:  # Default to anthropic
-        agent = AnthropicFC(
-            system_prompt=SYSTEM_PROMPT,
-            client=client,
-            workspace_manager=workspace_manager,
-            tools=tools,
-            message_queue=queue,
-            logger_for_agent_logs=logger_for_agent_logs,
-            context_manager=context_manager,
-            max_output_tokens_per_turn=max_tokens,
-            max_turns=MAX_TURNS,
-            session_id=session_id,  # Pass the session_id from database manager
-        )
+    # Initialize agent
+    agent = AnthropicFC(
+        system_prompt=SYSTEM_PROMPT,
+        client=client,
+        workspace_manager=workspace_manager,
+        tools=tools,
+        message_queue=queue,
+        logger_for_agent_logs=logger_for_agent_logs,
+        context_manager=context_manager,
+        max_output_tokens_per_turn=max_tokens,
+        max_turns=MAX_TURNS,
+        session_id=session_id,  # Pass the session_id from database manager
+    )
 
     # Create background task for message processing
     message_task = agent.start_message_processing()
