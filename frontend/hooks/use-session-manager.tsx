@@ -20,7 +20,7 @@ export function useSessionManager({
   const eventsDataRef = useRef<{ events: IEvent[]; workspace: string } | null>(
     null
   );
-  const processingRef = useRef<boolean>(false);
+  const delayTimeRef = useRef<number>(1500);
 
   const isReplayMode = !!searchParams.get("id");
 
@@ -30,22 +30,9 @@ export function useSessionManager({
     setSessionId(id);
   }, [searchParams]);
 
-  const processAllEventsImmediately = useCallback(() => {
-    if (!eventsDataRef.current) return;
-
-    // Cancel any ongoing processing
-    processingRef.current = false;
-
-    const { events, workspace } = eventsDataRef.current;
-
-    // Process all events immediately without delay
-    dispatch({ type: "SET_LOADING", payload: true });
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
-      handleEvent({ ...event.event_payload, id: event.id }, workspace, true);
-    }
-    dispatch({ type: "SET_LOADING", payload: false });
-  }, [dispatch, handleEvent]);
+  const processAllEventsImmediately = () => {
+    delayTimeRef.current = 0;
+  };
 
   const fetchSessionEvents = useCallback(async () => {
     const id = searchParams.get("id");
@@ -76,24 +63,22 @@ export function useSessionManager({
 
         // Function to process events with delay
         const processEventsWithDelay = async () => {
-          if (processingRef.current) return;
-          processingRef.current = true;
-
           dispatch({ type: "SET_LOADING", payload: true });
           for (let i = 0; i < data.events.length; i++) {
-            // Check if processing was cancelled
-            if (!processingRef.current) break;
-
             const event = data.events[i];
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            if (delayTimeRef.current > 0) {
+              await new Promise((resolve) =>
+                setTimeout(resolve, delayTimeRef.current)
+              );
+            }
 
-            // Check again after the delay
-            if (!processingRef.current) break;
-
-            handleEvent({ ...event.event_payload, id: event.id }, workspace);
+            handleEvent(
+              { ...event.event_payload, id: event.id },
+              workspace,
+              delayTimeRef.current === 0
+            );
           }
           dispatch({ type: "SET_LOADING", payload: false });
-          processingRef.current = false;
         };
 
         // Start processing events with delay
