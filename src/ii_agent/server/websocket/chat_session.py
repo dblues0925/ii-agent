@@ -419,6 +419,10 @@ class ChatSession:
             self.agent.websocket = (
                 None  # This will prevent sending to websocket but keep processing
             )
+            if self.agent.history:
+                self.agent.history.save_to_session(
+                    str(self.session_uuid), self.file_store
+                )
 
         # Cancel any running tasks
         if self.active_task and not self.active_task.done():

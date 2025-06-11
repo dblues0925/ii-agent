@@ -18,7 +18,7 @@ class DatabaseManager:
             db_path: Path to the SQLite database file
         """
         self.engine = create_engine(f"sqlite:///{db_path}")
-        self.SessionFactory = sessionmaker(bind=self.engine)
+        self.SessionFactory = sessionmaker(bind=self.engine, expire_on_commit=False)
 
         # Create tables if they don't exist
         Base.metadata.create_all(self.engine)
@@ -127,7 +127,8 @@ class DatabaseManager:
             The session if found, None otherwise
         """
         with self.get_session() as session:
-            return session.query(Session).filter(Session.id == str(session_id)).first()
+            stmt = session.query(Session).filter(Session.id == str(session_id))
+            return session.scalars(stmt).first()
 
     def get_session_by_device_id(self, device_id: str) -> Optional[Session]:
         """Get a session by its device ID.
@@ -162,7 +163,7 @@ class DatabaseManager:
                 session.query(Event)
                 .filter(
                     Event.session_id == str(session_id),
-                    Event.event_type == EventType.USER_MESSAGE.value
+                    Event.event_type == EventType.USER_MESSAGE.value,
                 )
                 .order_by(Event.timestamp.desc())
                 .first()
@@ -172,7 +173,7 @@ class DatabaseManager:
                 # Delete all events after the last user message (inclusive)
                 session.query(Event).filter(
                     Event.session_id == str(session_id),
-                    Event.timestamp >= last_user_event.timestamp
+                    Event.timestamp >= last_user_event.timestamp,
                 ).delete()
             else:
                 # If no user message found, delete all events

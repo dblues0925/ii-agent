@@ -125,7 +125,17 @@ class AgentFactory:
         workspace_manager: WorkspaceManager,
         logger: logging.Logger,
     ):
-        """Create a new database session."""
+        """Create a new database session or load existing one if it exists."""
+        # Check if session already exists
+        existing_session = self.db_manager.get_session_by_id(session_id)
+
+        if existing_session:
+            logger.info(
+                f"Found existing session {session_id} with workspace at {existing_session.workspace_dir}"
+            )
+            return
+
+        # Create new session if it doesn't exist
         self.db_manager.create_session(
             device_id=device_id,
             session_uuid=session_id,
@@ -177,13 +187,12 @@ class AgentFactory:
         )
 
         # try to get history from file store
+        init_history = MessageHistory(context_manager)
         try:
-            init_history = MessageHistory.restore_from_session(
-                session_id.hex(), file_store
-            )
-        except Exception as e:
-            logger.error(f"Error restoring history from file store: {e}")
-            init_history = MessageHistory(context_manager)
+            init_history.restore_from_session(str(session_id), file_store)
+
+        except FileNotFoundError:
+            logger.info(f"No history found for session {session_id}")
 
         agent = FunctionCallAgent(
             system_prompt=system_prompt,
