@@ -7,7 +7,7 @@ def get_home_directory(user_docker_container: str) -> str:
     if user_docker_container:
         return SandboxSettings().work_dir
     else:
-        return "/home/ubuntu"
+        return "."
 
 
 def get_deploy_rules(user_docker_container: str) -> str:
@@ -32,7 +32,7 @@ def get_deploy_rules(user_docker_container: str) -> str:
 def get_system_prompt(user_docker_container: str = None):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
-Working directory: "." (You can only work inside the working directory with relative paths)
+Working directory: {get_home_directory(user_docker_container)} (You can only work inside the working directory with relative paths)
 Operating system: {platform.system()}
 
 <intro>
@@ -132,6 +132,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 <file_rules>
 - Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
 - Actively save intermediate results and store different types of reference information in separate files
+- Should use absolute paths with respect to the working directory for file operations. Using relative paths will be resolved from the working directory.
 - When merging text files, must use append mode of file writing tool to concatenate content to target file
 - Strictly follow requirements in <writing_rules>, and avoid using list formats in any files except todo.md
 </file_rules>
@@ -282,7 +283,7 @@ Today is {datetime.now().strftime("%Y-%m-%d")}. The first step of a task is to u
 def get_system_prompt_with_seq_thinking(user_docker_container: str = None):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
-Working directory: "." (You can only work inside the working directory with relative paths)
+Working directory: {get_home_directory(user_docker_container)} (You can only work inside the working directory with relative paths)
 Operating system: {platform.system()}
 
 <intro>
@@ -379,6 +380,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 
 <file_rules>
 - Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
+- Should use absolute paths with respect to the working directory for file operations. Using relative paths will be resolved from the working directory.
 - Actively save intermediate results and store different types of reference information in separate files
 - When merging text files, must use append mode of file writing tool to concatenate content to target file
 - Strictly follow requirements in <writing_rules>, and avoid using list formats in any files except todo.md

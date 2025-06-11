@@ -52,6 +52,6 @@ class WorkspaceManager:
             if not self.container_workspace:
                 return abs_path.relative_to(self.root.absolute())
             else:
-                return abs_path.relative_to(self.container_workspace.absolute())
+                return abs_path
         except ValueError:
             return abs_path

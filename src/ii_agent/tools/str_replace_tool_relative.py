@@ -62,6 +62,7 @@ Notes for using the `str_replace` command:\n
 * The `old_str` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n
 * If the `old_str` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `old_str` to make it unique\n
 * The `new_str` parameter should contain the edited lines that should replace the `old_str`
+* Should use absolute paths with respect to the working directory for file operations. If you use relative paths, they will be resolved from the working directory.
 """
     input_schema = {
         "type": "object",
