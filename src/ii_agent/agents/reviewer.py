@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Any, List, Optional
 import uuid
+from datetime import datetime
 
 from fastapi import WebSocket
 from ii_agent.agents.base import BaseAgent
@@ -20,12 +21,13 @@ class ReviewerAgent(BaseAgent):
     name = "reviewer_agent"
     description = """\
 A comprehensive reviewer agent that evaluates and reviews the results/websites/slides created by general agent, 
-then provides structured feedback and improvement suggestions.
+then provides detailed feedback and improvement suggestions with special focus on functionality testing.
 
-This agent conducts thorough reviews using structured evaluation criteria and returns a JSON response with:
-- summarization: Comprehensive analysis of approach, tools used, and execution quality
-- implementation_suggestion: Concrete technical suggestions for the most impactful improvement
-- implementation_details: Detailed implementation plan with specific code changes and modifications
+This agent conducts thorough reviews with emphasis on:
+- Testing ALL interactive elements (buttons, forms, navigation, etc.)
+- Verifying website functionality and user experience
+- Providing detailed, natural language feedback without format restrictions
+- Identifying specific issues and areas for improvement
 """
     input_schema = {
         "type": "object",
@@ -171,7 +173,8 @@ Your task is to conduct a comprehensive review following these steps:
 
 1. **Context Analysis**: Understand the task complexity, user expectations, and success criteria
 2. **Result Examination**: Check the final result of the general agent's execution (websites, slide decks, documents, etc.)
-   - Use browser tools to visit websites and test functionality
+   - **PRIORITY**: Use browser tools to thoroughly test websites - click ALL buttons, fill ALL forms, test ALL interactive elements
+   - Test navigation, responsiveness, and user experience
    - Read slide deck files and evaluate structure/content
    - Examine any generated documents or code
 3. **Workspace Analysis**: Analyze the workspace directory to understand the agent's approach
@@ -180,16 +183,9 @@ Your task is to conduct a comprehensive review following these steps:
    - Review logs and execution traces for insights
 4. **Quality Assessment**: Evaluate against structured criteria (completeness, accuracy, efficiency, user experience)
 5. **Improvement Identification**: Identify areas where agent capabilities could be enhanced
-6. **Actionable Recommendations**: Generate structured feedback with prioritized improvements
+6. **Actionable Recommendations**: Generate detailed feedback with prioritized improvements
 
-You must respond precisely in the following format including the JSON start and end markers:
-```json
-{
-    "summarization": "A comprehensive analysis of how the agent approached and attempted to solve the task, including tools used, strategies employed, challenges encountered, and overall execution quality",
-    "implementation_suggestion": "Concrete technical suggestions for implementing the most impactful improvement, including whether to modify existing tools, create new ones, or enhance agent capabilities",
-    "implementation_details": "Detailed implementation plan including specific code changes, new tool specifications, configuration updates, or architectural modifications needed to implement the suggested improvement"
-}
-```"""
+Provide your comprehensive review in natural language format. You have complete freedom to structure your response as you see fit. Focus on being thorough, specific, and honest about what works and what doesn't work. Pay special attention to functionality testing and user experience."""
 
         self.history.add_user_prompt(review_instruction)
         self.interrupted = False
@@ -275,14 +271,27 @@ You must respond precisely in the following format including the JSON start and 
                 tool_result = self.tool_manager.run_tool(tool_call, self.history)
                 self.add_tool_call_result(tool_call, tool_result)
                 if tool_call.tool_name == "return_control_to_user":
+                    # Send the review message to the message queue for websocket transmission
+                    if self.websocket:
+                        review_message = RealtimeEvent(
+                            type=EventType.AGENT_RESPONSE,
+                            content={
+                                "agent_name": self.name,
+                                "content": tool_result,
+                                "timestamp": datetime.now().isoformat()
+                            }
+                        )
+                        # Put the message in the queue instead of using await
+                        self.message_queue.put_nowait(review_message)
+                    
                     return ToolImplOutput(
                         tool_output=tool_result,
-                        tool_result_message="Reviewer completed with JSON response"
+                        tool_result_message="Reviewer completed comprehensive review"
                     )
 
-        # If we exhausted all turns without producing JSON
+        # If we exhausted all turns without completing review
         return ToolImplOutput(
-            tool_output='{"error": "Reviewer did not complete review within maximum turns"}',
+            tool_output="ERROR: Reviewer did not complete review within maximum turns. The review process was interrupted or took too long to complete.",
             tool_result_message="Review incomplete - maximum turns reached"
         )
 
