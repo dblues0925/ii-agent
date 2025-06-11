@@ -52,6 +52,7 @@ export function useAppEvents({
     ) => {
       switch (data.type) {
         case AgentEvent.AGENT_INITIALIZED:
+          safeDispatch({ type: "SET_AGENT_INITIALIZED", payload: true });
           break;
 
         case AgentEvent.USER_MESSAGE:
