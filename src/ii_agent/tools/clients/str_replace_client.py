@@ -2,27 +2,16 @@
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional, Any
 import httpx
 
+from ii_agent.tools.clients.config import RemoteClientConfig
 from ii_agent.utils.tool_client.manager.str_replace_manager import (
     StrReplaceManager,
     StrReplaceResponse,
 )
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class StrReplaceClientConfig:
-    """Configuration for the StrReplaceClient."""
-
-    mode: str = "local"  # "local" or "remote"
-    server_url: Optional[str] = None
-    timeout: float = 30.0
-    ignore_indentation_for_str_replace: bool = False
-    expand_tabs: bool = False
 
 
 class StrReplaceClientBase(ABC):
@@ -85,7 +74,7 @@ class StrReplaceClientBase(ABC):
 class LocalStrReplaceClient(StrReplaceClientBase):
     """Local implementation using StrReplaceManager directly."""
 
-    def __init__(self, config: StrReplaceClientConfig):
+    def __init__(self, config: RemoteClientConfig):
         self.config = config
         self.manager = StrReplaceManager(
             ignore_indentation_for_str_replace=config.ignore_indentation_for_str_replace,
@@ -133,7 +122,7 @@ class LocalStrReplaceClient(StrReplaceClientBase):
 class RemoteStrReplaceClient(StrReplaceClientBase):
     """Remote implementation using HTTP API calls."""
 
-    def __init__(self, config: StrReplaceClientConfig):
+    def __init__(self, config: RemoteClientConfig):
         self.config = config
         if not config.server_url:
             raise ValueError("server_url is required for remote mode")
@@ -254,15 +243,15 @@ class RemoteStrReplaceClient(StrReplaceClientBase):
 class StrReplaceClient:
     """Factory class for creating the appropriate client based on configuration."""
 
-    def __init__(self, config: StrReplaceClientConfig):
+    def __init__(self, config: RemoteClientConfig):
         self.config = config
         if config.mode == "local":
             self._client = LocalStrReplaceClient(config)
-        elif config.mode == "remote":
+        elif config.mode == "remote" or config.mode == "e2b":
             self._client = RemoteStrReplaceClient(config)
         else:
             raise ValueError(
-                f"Unsupported mode: {config.mode}. Must be 'local' or 'remote'"
+                f"Unsupported mode: {config.mode}. Must be 'local' or 'remote' or 'e2b'"
             )
 
     def validate_path(

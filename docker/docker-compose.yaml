@@ -7,7 +7,7 @@ services:
     ports:
       - "${PROXY_SERVER_PORT:-9000}:8000"
     profiles:
-      - sandbox
+      - docker
     networks:
       - ii
 
@@ -33,7 +33,7 @@ services:
     ports:
       - "80:80"
     profiles:
-      - sandbox
+      - docker
     networks:
       - ii
 
@@ -43,7 +43,7 @@ services:
       dockerfile: docker/sandbox/Dockerfile
     image: sandbox
     profiles:
-      - sandbox
+      - docker
     deploy:
       replicas: 0
 

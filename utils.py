@@ -2,6 +2,7 @@ import os
 from argparse import ArgumentParser
 import uuid
 from pathlib import Path
+from e2b import Sandbox
 from ii_agent.sandbox.config import SandboxSettings
 from ii_agent.sandbox.docker_sandbox import DockerSandbox
 from ii_agent.utils import WorkspaceManager
@@ -30,9 +31,10 @@ def parse_common_args(parser: ArgumentParser):
     )
     parser.add_argument(
         "--use-container-workspace",
-        help="Use docker container to run commands in",
-        action="store_true",
-        default=False,
+        help="Use docker container to run commands in, or e2b sandbox",
+        type=str,
+        choices=["docker", "e2b", None],
+        default=None,
     )
     parser.add_argument(
         "--minimize-stdout-logs",
@@ -113,11 +115,19 @@ async def create_container_workspace(container_name: str):
 
 
 async def create_workspace_manager_for_connection(
-    workspace_root: str, use_container_workspace: bool = False
+    workspace_root: str, use_container_workspace: str = None
 ):
     """Create a new workspace manager instance for a websocket connection."""
     # Create unique subdirectory for this connection
-    connection_id = str(uuid.uuid4())
+    if use_container_workspace == "e2b":
+        sandbox = Sandbox("6edq2s1ntcipb0fbxh57", timeout=900)
+        connection_id = sandbox.sandbox_id
+    elif use_container_workspace == "docker":
+        connection_id = str(uuid.uuid4())
+        await create_container_workspace(container_name=connection_id)
+    else:
+        connection_id = str(uuid.uuid4())
+
     workspace_path = Path(workspace_root).resolve()
     connection_workspace = workspace_path / connection_id
     connection_workspace.mkdir(parents=True, exist_ok=True)
@@ -127,8 +137,5 @@ async def create_workspace_manager_for_connection(
     workspace_manager = WorkspaceManager(
         root=connection_workspace, container_workspace=Path(sandbox_settings.work_dir)
     )
-
-    if use_container_workspace:
-        await create_container_workspace(container_name=connection_id)
 
     return workspace_manager, connection_id

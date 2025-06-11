@@ -557,6 +557,7 @@ def create_agent_for_connection(
         container_id=session_id if global_args.use_container_workspace else None,
         ask_user_permission=global_args.needs_permission,
         tool_args=tool_args,
+        e2b=global_args.use_container_workspace == "e2b",
     )
     system_prompt = get_system_prompt(global_args.use_container_workspace)
     system_prompt_with_seq_thinking = get_system_prompt_with_seq_thinking(

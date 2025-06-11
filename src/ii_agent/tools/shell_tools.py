@@ -237,9 +237,9 @@ class ShellWriteToProcessTool(LLMTool):
 
 
 if __name__ == "__main__":
-    from ii_agent.tools.clients.terminal_client import TerminalClientConfig
+    from ii_agent.tools.clients.config import RemoteClientConfig
 
-    terminal_client = TerminalClient(TerminalClientConfig())
+    terminal_client = TerminalClient(RemoteClientConfig(mode="local"))
     result = terminal_client.shell_exec("session_1", "ls", exec_dir=".", timeout=5)
     print("--------------------------------")
     print(result.output)

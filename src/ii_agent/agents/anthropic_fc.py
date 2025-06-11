@@ -15,7 +15,7 @@ from ii_agent.tools.utils import encode_image
 from ii_agent.db.manager import DatabaseManager
 from ii_agent.tools import AgentToolManager
 from ii_agent.utils.constants import COMPLETE_MESSAGE
-from ii_agent.utils.tool_client.manager.workspace_manager import WorkspaceManager
+from ii_agent.utils.workspace_manager import WorkspaceManager
 
 TOOL_RESULT_INTERRUPT_MESSAGE = "Tool execution interrupted by user."
 AGENT_INTERRUPT_MESSAGE = "Agent interrupted by user."

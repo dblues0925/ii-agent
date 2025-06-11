@@ -3,6 +3,8 @@ import asyncio
 import logging
 from copy import deepcopy
 from typing import Optional, List, Dict, Any
+
+from e2b import Sandbox
 from ii_agent.llm.base import LLMClient
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
 from ii_agent.llm.token_counter import TokenCounter
@@ -10,7 +12,7 @@ from ii_agent.sandbox.config import SandboxSettings
 from ii_agent.tools.advanced_tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
-from ii_agent.tools.clients.str_replace_client import StrReplaceClientConfig
+from ii_agent.tools.clients.config import RemoteClientConfig
 from ii_agent.tools.register_deployment import RegisterDeploymentTool
 from ii_agent.tools.shell_tools import (
     ShellExecTool,
@@ -20,7 +22,7 @@ from ii_agent.tools.shell_tools import (
     ShellWriteToProcessTool,
 )
 from ii_agent.tools.static_deploy_tool import StaticDeployTool
-from ii_agent.tools.clients.terminal_client import TerminalClient, TerminalClientConfig
+from ii_agent.tools.clients.terminal_client import TerminalClient
 from ii_agent.tools.memory.compactify_memory import CompactifyMemoryTool
 from ii_agent.tools.memory.simple_memory import SimpleMemoryTool
 from ii_agent.tools.slide_deck_tool import SlideDeckInitTool, SlideDeckCompleteTool
@@ -69,6 +71,7 @@ def get_system_tools(
     container_id: Optional[str] = None,
     ask_user_permission: bool = False,
     tool_args: Dict[str, Any] = None,
+    e2b: bool = False,
 ) -> list[LLMTool]:
     """
     Retrieves a list of all system tools.
@@ -76,19 +79,6 @@ def get_system_tools(
     Returns:
         list[LLMTool]: A list of all system tools.
     """
-    terminal_config = None
-    if container_id is not None:
-        sandbox_settings = SandboxSettings()
-        terminal_config = TerminalClientConfig(
-            mode="remote",
-            server_url=f"http://{container_id}:17300",
-            cwd=sandbox_settings.work_dir,
-        )
-    else:
-        terminal_config = TerminalClientConfig(
-            mode="local", cwd=workspace_manager.root.absolute()
-        )
-    terminal_client = TerminalClient(terminal_config)
 
     logger = logging.getLogger("presentation_context_manager")
     context_manager = LLMSummarizingContextManager(
@@ -98,54 +88,73 @@ def get_system_tools(
         token_budget=120_000,
     )
 
-    tools = [
-        MessageTool(),
-        WebSearchTool(),
-        VisitWebpageTool(),
-        ShellExecTool(terminal_client=terminal_client),
-        ShellViewTool(terminal_client=terminal_client),
-        ShellWaitTool(terminal_client=terminal_client),
-        ShellWriteToProcessTool(terminal_client=terminal_client),
-        ShellKillProcessTool(terminal_client=terminal_client),
-        ListHtmlLinksTool(workspace_manager=workspace_manager),
-        SlideDeckInitTool(
-            workspace_manager=workspace_manager,
-            terminal_client=terminal_client,
-        ),
-        SlideDeckCompleteTool(
-            workspace_manager=workspace_manager,
-        ),
-        DisplayImageTool(workspace_manager=workspace_manager),
-    ]
-    if container_id is not None:
-        tools.append(RegisterDeploymentTool(workspace_manager=workspace_manager))
-        config = StrReplaceClientConfig(
+    tools = []
+    config = None
+    if e2b:
+        sandbox = Sandbox.connect(container_id)
+        host = sandbox.get_host(17300)
+        config = RemoteClientConfig(
+            mode="e2b",
+            server_url=f"https://{host}",
+            ignore_indentation_for_str_replace=False,
+            expand_tabs=False,
+            container_id=container_id,
+        )
+        tools.append(
+            RegisterDeploymentTool(workspace_manager=workspace_manager, config=config)
+        )
+    elif container_id is not None:
+        sandbox_settings = SandboxSettings()
+        config = RemoteClientConfig(
             mode="remote",
             server_url=f"http://{container_id}:17300",
             ignore_indentation_for_str_replace=False,
             expand_tabs=False,
+            cwd=sandbox_settings.work_dir,
+            container_id=container_id,
         )
         tools.append(
-            StrReplaceEditorToolRelative(
-                workspace_manager=workspace_manager,
-                message_queue=message_queue,
-                client_config=config,
-            )
+            RegisterDeploymentTool(workspace_manager=workspace_manager, config=config)
         )
     else:
-        tools.append(StaticDeployTool(workspace_manager=workspace_manager))
-        config = StrReplaceClientConfig(
+        config = RemoteClientConfig(
             mode="local",
+            cwd=workspace_manager.root.absolute(),
             ignore_indentation_for_str_replace=False,
             expand_tabs=False,
         )
         tools.append(
+            StaticDeployTool(workspace_manager=workspace_manager)
+        )  # Todo: Replace this with local mode of register deployment tool
+    terminal_client = TerminalClient(config)
+
+    tools.extend(
+        [
             StrReplaceEditorToolRelative(
                 workspace_manager=workspace_manager,
                 message_queue=message_queue,
                 client_config=config,
-            )
-        )
+            ),
+            MessageTool(),
+            WebSearchTool(),
+            VisitWebpageTool(),
+            ShellExecTool(terminal_client=terminal_client),
+            ShellViewTool(terminal_client=terminal_client),
+            ShellWaitTool(terminal_client=terminal_client),
+            ShellWriteToProcessTool(terminal_client=terminal_client),
+            ShellKillProcessTool(terminal_client=terminal_client),
+            ListHtmlLinksTool(workspace_manager=workspace_manager),
+            SlideDeckInitTool(
+                workspace_manager=workspace_manager,
+                terminal_client=terminal_client,
+            ),
+            SlideDeckCompleteTool(
+                workspace_manager=workspace_manager,
+            ),
+            DisplayImageTool(workspace_manager=workspace_manager),
+        ]
+    )
+
     image_search_tool = ImageSearchTool()
     if image_search_tool.is_available():
         tools.append(image_search_tool)

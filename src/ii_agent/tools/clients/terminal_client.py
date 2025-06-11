@@ -2,28 +2,16 @@
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Any
 import httpx
 
+from ii_agent.tools.clients.config import RemoteClientConfig
 from ii_agent.utils.tool_client.manager.terminal_manager import (
     PexpectSessionManager,
     SessionResult,
 )
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class TerminalClientConfig:
-    """Configuration for the TerminalClient."""
-
-    mode: str = "local"  # "local" or "remote"
-    server_url: Optional[str] = None
-    timeout: float = 30.0
-    default_shell: str = "/bin/bash"
-    default_timeout: int = 10
-    cwd: Optional[str] = None
 
 
 class TerminalClientBase(ABC):
@@ -72,7 +60,7 @@ class TerminalClientBase(ABC):
 class LocalTerminalClient(TerminalClientBase):
     """Local implementation using PexpectSessionManager directly."""
 
-    def __init__(self, config: TerminalClientConfig):
+    def __init__(self, config: RemoteClientConfig):
         self.config = config
         self.manager = PexpectSessionManager(
             default_shell=config.default_shell,
@@ -134,7 +122,7 @@ class LocalTerminalClient(TerminalClientBase):
 class RemoteTerminalClient(TerminalClientBase):
     """Remote implementation using HTTP API calls."""
 
-    def __init__(self, config: TerminalClientConfig):
+    def __init__(self, config: RemoteClientConfig):
         self.config = config
         if not config.server_url:
             raise ValueError("server_url is required for remote mode")
@@ -224,15 +212,15 @@ class RemoteTerminalClient(TerminalClientBase):
 class TerminalClient:
     """Factory class for creating the appropriate client based on configuration."""
 
-    def __init__(self, config: TerminalClientConfig):
+    def __init__(self, config: RemoteClientConfig):
         self.config = config
         if config.mode == "local":
             self._client = LocalTerminalClient(config)
-        elif config.mode == "remote":
+        elif config.mode == "remote" or config.mode == "e2b":
             self._client = RemoteTerminalClient(config)
         else:
             raise ValueError(
-                f"Unsupported mode: {config.mode}. Must be 'local' or 'remote'"
+                f"Unsupported mode: {config.mode}. Must be 'local' or 'remote' or 'e2b'"
             )
 
     def create_session(self, session_id: str) -> SessionResult:

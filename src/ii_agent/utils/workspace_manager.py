@@ -18,6 +18,27 @@ class WorkspaceManager:
             return self.root / path.relative_to(self.container_workspace)
         return path
 
+    def container_path(self, path: Path | str) -> Path:
+        """Given a path, possibly in the local workspace, return the absolute container path.
+        If there is no container workspace, return the absolute local path.
+        """
+        path = Path(path)
+        if not path.is_absolute():
+            if self.container_workspace:
+                return self.container_workspace / path
+            else:
+                return self.root / path
+        return path
+
+    def root_path(self) -> Path:
+        """Return the absolute path of the workspace root.
+        If there is no container workspace, return the absolute local path.
+        """
+        if self.container_workspace:
+            return self.container_workspace.absolute()
+        else:
+            return self.root.absolute()
+
     def relative_path(self, path: Path | str) -> Path:
         """Given a path, return the relative path from the workspace root.
         If the path is not under the workspace root, returns the absolute path.
@@ -34,24 +55,3 @@ class WorkspaceManager:
                 return abs_path.relative_to(self.container_workspace.absolute())
         except ValueError:
             return abs_path
-
-    def root_path(self) -> Path:
-        """Return the absolute path of the workspace root.
-        If there is no container workspace, return the absolute local path.
-        """
-        if self.container_workspace:
-            return self.container_workspace.absolute()
-        else:
-            return self.root.absolute()
-
-    def container_path(self, path: Path | str) -> Path:
-        """Given a path, possibly in the local workspace, return the absolute container path.
-        If there is no container workspace, return the absolute local path.
-        """
-        path = Path(path)
-        if not path.is_absolute():
-            if self.container_workspace:
-                return self.container_workspace / path
-            else:
-                return self.root / path
-        return path

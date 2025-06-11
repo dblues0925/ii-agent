@@ -3,14 +3,14 @@ import platform
 from ii_agent.sandbox.config import SandboxSettings
 
 
-def get_home_directory(user_docker_container: bool) -> str:
+def get_home_directory(user_docker_container: str) -> str:
     if user_docker_container:
         return SandboxSettings().work_dir
     else:
         return "/home/ubuntu"
 
 
-def get_deploy_rules(user_docker_container: bool) -> str:
+def get_deploy_rules(user_docker_container: str) -> str:
     if user_docker_container:
         return """<deploy_rules>
 - You have access to all ports 10000-10099, you can deploy as many services as you want
@@ -29,7 +29,7 @@ def get_deploy_rules(user_docker_container: bool) -> str:
 </deploy_rules>"""
 
 
-def get_system_prompt(user_docker_container: bool = False):
+def get_system_prompt(user_docker_container: str = None):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
 Working directory: "." (You can only work inside the working directory with relative paths)
@@ -274,7 +274,7 @@ Today is {datetime.now().strftime("%Y-%m-%d")}. The first step of a task is to u
 """
 
 
-def get_system_prompt_with_seq_thinking(user_docker_container: bool = False):
+def get_system_prompt_with_seq_thinking(user_docker_container: str = None):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
 Working directory: "." (You can only work inside the working directory with relative paths)

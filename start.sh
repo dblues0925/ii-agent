@@ -1,8 +1,8 @@
 #!/bin/bash
 # Detect OS type and set HOST_IP appropriately
 
-if [ "$COMPOSE_PROFILE" = "sandbox" ]; then
-  export USE_DOCKER_SANDBOX=true
+if [ -n "$COMPOSE_PROFILE" ]; then
+  export USE_DOCKER_SANDBOX=$COMPOSE_PROFILE
 else
   export COMPOSE_PROFILE=local
 fi
