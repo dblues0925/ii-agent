@@ -104,6 +104,7 @@ def map_model_name_to_client(model_name: str, ws_content: Dict[str, Any]) -> LLM
     Raises:
         ValueError: If the model name is not supported
     """
+    print(ws_content)
     if "claude" in model_name:
         return get_client(
             "anthropic-direct",
@@ -111,7 +112,7 @@ def map_model_name_to_client(model_name: str, ws_content: Dict[str, Any]) -> LLM
             use_caching=False,
             project_id=global_args.project_id,
             region=global_args.region,
-            thinking_tokens=ws_content['tool_args']['thinking_tokens'],
+            thinking_tokens=ws_content["tool_args"]["thinking_tokens"],
         )
     elif "gemini" in model_name:
         return get_client(
@@ -481,12 +482,7 @@ async def run_agent_async(
             
             if review_feedback and review_feedback.strip():
                 logger.info("Feeding reviewer feedback to agent for improvement...")
-                feedback_prompt = f"""Based on the reviewer's analysis, here is the feedback for improvement:
-
-{review_feedback}
-
-Please review this feedback and implement the suggested improvements to better complete the original task: "{user_input}"
-"""
+                feedback_prompt = f"""{review_feedback}"""
                 
                 # Run agent with reviewer feedback
                 improved_result = await anyio.to_thread.run_sync(

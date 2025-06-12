@@ -167,26 +167,6 @@ Here is the workspace directory of the general agent's execution:
 
 Now your turn to review the general agent's work.
 """
-
-        review_instruction_ = """
-Your task is to conduct a comprehensive review following these steps:
-
-1. **Context Analysis**: Understand the task complexity, user expectations, and success criteria
-2. **Result Examination**: Check the final result of the general agent's execution (websites, slide decks, documents, etc.)
-   - **PRIORITY**: Use browser tools to thoroughly test websites - click ALL buttons, fill ALL forms, test ALL interactive elements
-   - Test navigation, responsiveness, and user experience
-   - Read slide deck files and evaluate structure/content
-   - Examine any generated documents or code
-3. **Workspace Analysis**: Analyze the workspace directory to understand the agent's approach
-   - Only check inside this workspace directory, do not check outside of it
-   - Check todo file if it exists to understand the pipeline used
-   - Review logs and execution traces for insights
-4. **Quality Assessment**: Evaluate against structured criteria (completeness, accuracy, efficiency, user experience)
-5. **Improvement Identification**: Identify areas where agent capabilities could be enhanced
-6. **Actionable Recommendations**: Generate detailed feedback with prioritized improvements
-
-Provide your comprehensive review in natural language format. You have complete freedom to structure your response as you see fit. Focus on being thorough, specific, and honest about what works and what doesn't work. Pay special attention to functionality testing and user experience."""
-
         self.history.add_user_prompt(review_instruction)
         self.interrupted = False
 
@@ -271,19 +251,6 @@ Provide your comprehensive review in natural language format. You have complete 
                 tool_result = self.tool_manager.run_tool(tool_call, self.history)
                 self.add_tool_call_result(tool_call, tool_result)
                 if tool_call.tool_name == "return_control_to_user":
-                    # Send the review message to the message queue for websocket transmission
-                    if self.websocket:
-                        review_message = RealtimeEvent(
-                            type=EventType.AGENT_RESPONSE,
-                            content={
-                                "agent_name": self.name,
-                                "content": tool_result,
-                                "timestamp": datetime.now().isoformat()
-                            }
-                        )
-                        # Put the message in the queue instead of using await
-                        self.message_queue.put_nowait(review_message)
-                    
                     return ToolImplOutput(
                         tool_output=tool_result,
                         tool_result_message="Reviewer completed comprehensive review"
