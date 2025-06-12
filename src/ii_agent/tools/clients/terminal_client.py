@@ -66,6 +66,7 @@ class LocalTerminalClient(TerminalClientBase):
             default_shell=config.default_shell,
             default_timeout=config.default_timeout,
             cwd=config.cwd,
+            use_relative_path=True,
         )
 
     def create_session(self, session_id: str) -> SessionResult:

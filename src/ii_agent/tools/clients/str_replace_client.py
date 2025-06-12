@@ -79,6 +79,8 @@ class LocalStrReplaceClient(StrReplaceClientBase):
         self.manager = StrReplaceManager(
             ignore_indentation_for_str_replace=config.ignore_indentation_for_str_replace,
             expand_tabs=config.expand_tabs,
+            use_relative_path=True,
+            cwd=config.cwd,
         )
 
     def validate_path(

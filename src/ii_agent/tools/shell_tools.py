@@ -26,7 +26,7 @@ class ShellExecTool(LLMTool):
             },
             "exec_dir": {
                 "type": "string",
-                "description": "Working directory for command execution (must use absolute path)",
+                "description": "Working directory for command execution",
             },
         },
         "required": ["session_id", "command", "exec_dir"],

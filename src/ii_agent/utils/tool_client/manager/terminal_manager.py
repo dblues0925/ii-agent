@@ -40,16 +40,21 @@ class PexpectSession:
 class PexpectSessionManager:
     """Session manager for pexpect-based terminal sessions"""
 
+    HOME_DIR = ".WORKING_DIR"  # TODO: Refactor to use constant
+
     def __init__(
         self,
         default_shell: str = "/bin/bash",
         default_timeout: int = 10,
         cwd: str = None,
         container_id: Optional[str] = None,
+        use_relative_path: bool = False,
     ):
         self.default_shell = default_shell
         self.default_timeout = default_timeout
         self.sessions: Dict[str, PexpectSession] = {}
+        self.use_relative_path = use_relative_path
+        self.work_dir = None
         self.prompt_setup = (
             'export PS1="[CMD_BEGIN]\\n\\u@\\h:\\w\\n[CMD_END]"; export PS2=""'
         )
@@ -78,6 +83,21 @@ class PexpectSessionManager:
         return out
 
     def _format_output(
+        self,
+        raw_output: str,
+        command: str,
+        session: PexpectSession,
+        timeout: int,
+    ) -> str:
+        formated_output = self._format_output_raw(raw_output, command, session, timeout)
+        if self.use_relative_path:
+            return formated_output.replace(self.cwd, self.HOME_DIR).replace(
+                self.work_dir, self.HOME_DIR
+            )
+        else:
+            return formated_output
+
+    def _format_output_raw(
         self,
         raw_output: str,
         command: str,
@@ -153,7 +173,12 @@ class PexpectSessionManager:
         # Format: current_dir + command, then output
         formatted_command = f"{session.current_directory}$ {command}"
         if new_directory:
-            session.current_directory = new_directory
+            if self.use_relative_path:
+                session.current_directory = new_directory.replace(
+                    self.cwd, self.HOME_DIR
+                ).replace(self.work_dir, self.HOME_DIR)
+            else:
+                session.current_directory = new_directory
 
         if command_output:
             return f"{formatted_command}\n{command_output}"
@@ -229,14 +254,18 @@ class PexpectSessionManager:
             if not self.container_id:
                 child.sendline(prompt_setup)
                 child.expect(self.end_pattern, timeout=self.default_timeout)
-                session.current_directory = self._extract_current_directory_from_prompt(
-                    child.before
-                )
             else:
                 child.expect(self.end_pattern, timeout=self.default_timeout)
-                session.current_directory = self._extract_current_directory_from_prompt(
-                    child.before
-                )
+            current_directory = self._extract_current_directory_from_prompt(
+                child.before
+            )
+            self.work_dir = current_directory.split(":")[-1].strip()
+            if self.use_relative_path:
+                session.current_directory = current_directory.replace(
+                    self.cwd, self.HOME_DIR
+                ).replace(self.work_dir, self.HOME_DIR)
+            else:
+                session.current_directory = current_directory
 
             session.child = child
             self.sessions[session_id] = session

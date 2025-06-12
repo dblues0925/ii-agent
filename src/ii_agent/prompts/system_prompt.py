@@ -29,10 +29,32 @@ def get_deploy_rules(user_docker_container: str) -> str:
 </deploy_rules>"""
 
 
+def get_file_rules(user_docker_container: str) -> str:
+    if user_docker_container:
+        return """
+<file_rules>
+- Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
+- Actively save intermediate results and store different types of reference information in separate files
+- Should use absolute paths with respect to the working directory for file operations. Using relative paths will be resolved from the working directory.
+- When merging text files, must use append mode of file writing tool to concatenate content to target file
+- Strictly follow requirements in <writing_rules>, and avoid using list formats in any files except todo.md
+</file_rules>
+"""
+    else:
+        return """<file_rules>
+- Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
+- Actively save intermediate results and store different types of reference information in separate files
+- You cannot access files outside the working directory, only use relative paths with respect to the working directory to access files (Since you don't know the absolute path of the working directory, use relative paths to access files)
+- The full path is obfuscated as .WORKING_DIR, you must use relative paths to access files
+- When merging text files, must use append mode of file writing tool to concatenate content to target file
+- Strictly follow requirements in <writing_rules>, and avoid using list formats in any files except todo.md
+"""
+
+
 def get_system_prompt(user_docker_container: str = None):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
-Working directory: {get_home_directory(user_docker_container)} (You can only work inside the working directory with relative paths)
+Working directory: {get_home_directory(user_docker_container)} 
 Operating system: {platform.system()}
 
 <intro>
@@ -129,13 +151,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 - DO NOT download the hosted images to the workspace, you must use the hosted image urls
 </image_use_rules>
 
-<file_rules>
-- Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
-- Actively save intermediate results and store different types of reference information in separate files
-- Should use absolute paths with respect to the working directory for file operations. Using relative paths will be resolved from the working directory.
-- When merging text files, must use append mode of file writing tool to concatenate content to target file
-- Strictly follow requirements in <writing_rules>, and avoid using list formats in any files except todo.md
-</file_rules>
+{get_file_rules(user_docker_container)}
 
 <browser_rules>
 - Before using browser tools, try the `visit_webpage` tool to extract text-only content from a page
@@ -256,7 +272,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: `ubuntu`, with sudo privileges
-- Home directory: {get_home_directory(user_docker_container)}
+- Home and current directory: {get_home_directory(user_docker_container)}
 
 Development Environment:
 - Python 3.10.12 (commands: python3, pip3)
@@ -283,7 +299,7 @@ Today is {datetime.now().strftime("%Y-%m-%d")}. The first step of a task is to u
 def get_system_prompt_with_seq_thinking(user_docker_container: str = None):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
-Working directory: {get_home_directory(user_docker_container)} (You can only work inside the working directory with relative paths)
+Working directory: {get_home_directory(user_docker_container)} 
 Operating system: {platform.system()}
 
 <intro>
@@ -378,13 +394,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 - DO NOT download the hosted images to the workspace, you must use the hosted image urls
 </image_rules>
 
-<file_rules>
-- Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
-- Should use absolute paths with respect to the working directory for file operations. Using relative paths will be resolved from the working directory.
-- Actively save intermediate results and store different types of reference information in separate files
-- When merging text files, must use append mode of file writing tool to concatenate content to target file
-- Strictly follow requirements in <writing_rules>, and avoid using list formats in any files except todo.md
-</file_rules>
+{get_file_rules(user_docker_container)}
 
 <browser_rules>
 - Before using browser tools, try the `visit_webpage` tool to extract text-only content from a page

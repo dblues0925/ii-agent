@@ -112,23 +112,26 @@ async def create_workspace_manager_for_connection(
 ):
     """Create a new workspace manager instance for a websocket connection."""
     # Create unique subdirectory for this connection
+    sandbox_settings = SandboxSettings()
     if use_container_workspace == "e2b":
         sandbox = Sandbox("6edq2s1ntcipb0fbxh57", timeout=900)
         connection_id = sandbox.sandbox_id
+        container_path = Path(sandbox_settings.work_dir)
     elif use_container_workspace == "docker":
         connection_id = str(uuid.uuid4())
         await create_container_workspace(container_name=connection_id)
+        container_path = Path(sandbox_settings.work_dir)
     else:
         connection_id = str(uuid.uuid4())
+        container_path = None
 
     workspace_path = Path(workspace_root).resolve()
     connection_workspace = workspace_path / connection_id
     connection_workspace.mkdir(parents=True, exist_ok=True)
-    sandbox_settings = SandboxSettings()
 
     # Initialize workspace manager with connection-specific subdirectory
     workspace_manager = WorkspaceManager(
-        root=connection_workspace, container_workspace=Path(sandbox_settings.work_dir)
+        root=connection_workspace, container_workspace=container_path
     )
 
     return workspace_manager, connection_id

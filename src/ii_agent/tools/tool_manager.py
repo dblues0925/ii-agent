@@ -124,7 +124,7 @@ def get_system_tools(
     else:
         config = RemoteClientConfig(
             mode="local",
-            cwd=workspace_manager.root.absolute(),
+            cwd=str(workspace_manager.root.absolute()),
             ignore_indentation_for_str_replace=False,
             expand_tabs=False,
         )
@@ -178,12 +178,18 @@ def get_system_tools(
         ):
             tools.append(ImageGenerateTool(workspace_manager=workspace_manager))
             if tool_args.get("video_generation", False):
-                tools.extend([
-                    VideoGenerateFromTextTool(workspace_manager=workspace_manager), 
-                    VideoGenerateFromImageTool(workspace_manager=workspace_manager),
-                    LongVideoGenerateFromTextTool(workspace_manager=workspace_manager),
-                    LongVideoGenerateFromImageTool(workspace_manager=workspace_manager)
-                ])
+                tools.extend(
+                    [
+                        VideoGenerateFromTextTool(workspace_manager=workspace_manager),
+                        VideoGenerateFromImageTool(workspace_manager=workspace_manager),
+                        LongVideoGenerateFromTextTool(
+                            workspace_manager=workspace_manager
+                        ),
+                        LongVideoGenerateFromImageTool(
+                            workspace_manager=workspace_manager
+                        ),
+                    ]
+                )
         if tool_args.get("audio_generation", False) and (
             os.environ.get("OPEN_API_KEY") and os.environ.get("AZURE_OPENAI_ENDPOINT")
         ):

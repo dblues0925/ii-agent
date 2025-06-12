@@ -83,15 +83,20 @@ class StrReplaceToolError(Exception):
 
 class StrReplaceManager:
     _file_history = defaultdict(list)
+    HOME_DIR = ".WORKING_DIR"  # TODO: Refactor to use constant
 
     def __init__(
         self,
         ignore_indentation_for_str_replace: bool = False,
         expand_tabs: bool = False,
+        use_relative_path: bool = False,
+        cwd: str = None,
     ):
         self._file_history = defaultdict(list)
         self.ignore_indentation_for_str_replace = ignore_indentation_for_str_replace
         self.expand_tabs = expand_tabs
+        self.use_relative_path = use_relative_path
+        self.cwd = cwd
 
     def _validate_path(self, command: str, path_str: str, display_path: str):
         """
@@ -180,6 +185,10 @@ class StrReplaceManager:
                     output = f"Here's the files and directories up to 2 levels deep in {display_path}, excluding hidden items:\n{stdout}\n"
                 else:
                     output = f"stderr: {stderr}\nstdout: {stdout}\n"
+                if self.use_relative_path:
+                    output = output.replace(
+                        self.cwd, self.HOME_DIR
+                    )  # Quick fix for relative path
                 return StrReplaceResponse(
                     success=not stderr,
                     file_content=output,
