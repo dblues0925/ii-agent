@@ -30,7 +30,7 @@ class SessionInfo(BaseModel):
     workspace_dir: str
     created_at: str
     device_id: str
-    first_message: str = ""
+    name: str = ""
 
 
 class SessionResponse(BaseModel):

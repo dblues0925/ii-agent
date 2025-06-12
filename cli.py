@@ -29,7 +29,7 @@ from ii_agent.utils import WorkspaceManager
 from ii_agent.llm import get_client
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
 from ii_agent.llm.token_counter import TokenCounter
-from ii_agent.db.manager import DatabaseManager
+from ii_agent.db.manager import Sessions
 
 MAX_OUTPUT_TOKENS_PER_TURN = 32768
 MAX_TURNS = 200
@@ -56,9 +56,6 @@ async def async_main():
     # Initialize console
     console = Console()
 
-    # Initialize database manager
-    db_manager = DatabaseManager()
-
     # Create a new workspace manager for the CLI session
     workspace_manager, session_id = create_workspace_manager_for_connection(
         args.workspace, args.use_container_workspace
@@ -66,7 +63,7 @@ async def async_main():
     workspace_path = workspace_manager.root
 
     # Create a new session and get its workspace directory
-    db_manager.create_session(
+    Sessions.create_session(
         session_uuid=session_id, workspace_path=workspace_manager.root
     )
     logger_for_agent_logs.info(

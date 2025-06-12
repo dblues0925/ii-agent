@@ -57,7 +57,7 @@ from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextMa
 from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.utils.constants import DEFAULT_MODEL, TOKEN_BUDGET, UPLOAD_FOLDER_NAME
 from utils import parse_common_args
-from ii_agent.db.manager import DatabaseManager
+from ii_agent.db.manager import Sessions, get_db
 from ii_agent.core.event import RealtimeEvent, EventType
 from ii_agent.tools.youtube_transcript_tool import YoutubeTranscriptTool
 
@@ -194,17 +194,14 @@ async def answer_single_question(
     workspace_path.mkdir(parents=True, exist_ok=True)
     logger.info(f"Created workspace directory for task {task_id}: {workspace_path}")
 
-    # Initialize database manager
-    db_manager = DatabaseManager()
-
     # Create a new session with the task_id as session_id
     session_id = uuid.UUID(task_id)
 
     # Check if session exists and handle accordingly
-    existing_session = db_manager.get_session_by_id(session_id)
+    existing_session = Sessions.get_session_by_id(session_id)
     if existing_session:
         logger.info(f"Found existing session {session_id}, removing old events...")
-        with db_manager.get_session() as session:
+        with get_db() as session:
             # Delete all events for this session
             session.query(Event).filter(Event.session_id == str(session_id)).delete()
             # Delete the session itself
@@ -223,7 +220,7 @@ async def answer_single_question(
                 )
 
     try:
-        db_manager.create_session(
+        Sessions.create_session(
             session_uuid=session_id,
             workspace_path=workspace_path,
             device_id="gaia-eval",

@@ -12,7 +12,7 @@ from ii_agent.llm.base import LLMClient, TextResult, ToolCallParameters
 from ii_agent.llm.message_history import MessageHistory
 from ii_agent.tools.base import ToolImplOutput, LLMTool
 from ii_agent.tools.utils import encode_image
-from ii_agent.db.manager import DatabaseManager
+from ii_agent.db.manager import Events
 from ii_agent.tools import AgentToolManager
 from ii_agent.utils.constants import COMPLETE_MESSAGE
 from ii_agent.utils.workspace_manager import WorkspaceManager
@@ -96,8 +96,6 @@ try breaking down the task into smaller steps. After call this tool to update or
         self.session_id = session_id
 
         # Initialize database manager
-        self.db_manager = DatabaseManager()
-
         self.message_queue = message_queue
         self.websocket = websocket
 
@@ -109,7 +107,7 @@ try breaking down the task into smaller steps. After call this tool to update or
 
                     # Save all events to database if we have a session
                     if self.session_id is not None:
-                        self.db_manager.save_event(self.session_id, message)
+                        Events.save_event(self.session_id, message)
                     else:
                         self.logger_for_agent_logs.info(
                             f"No session ID, skipping event: {message}"

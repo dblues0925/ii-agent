@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from ii_agent.agents.base import BaseAgent
 from ii_agent.core.event import RealtimeEvent, EventType
 from ii_agent.core.storage.files import FileStore
+from ii_agent.db.manager import Sessions, Events
 from ii_agent.utils.prompt_generator import enhance_user_prompt
 from ii_agent.utils.workspace_manager import WorkspaceManager
 from ii_agent.server.models.messages import (
@@ -45,6 +46,7 @@ class ChatSession:
         self.agent: Optional[BaseAgent] = None
         self.active_task: Optional[asyncio.Task] = None
         self.message_processor: Optional[asyncio.Task] = None
+        self.first_message = True
 
     async def send_event(self, event: RealtimeEvent):
         """Send an event to the client via WebSocket."""
@@ -180,6 +182,13 @@ class ChatSession:
         try:
             query_content = QueryContent(**content)
 
+            # Set session name from first message
+            if self.first_message and query_content.text.strip():
+                # Extract first few words as session name (max 100 characters)
+                session_name = query_content.text.strip()[:100]
+                Sessions.update_session_name(self.session_uuid, session_name)
+                self.first_message = False
+
             # Check if there's an active task for this session
             if self.has_active_task():
                 await self.send_event(
@@ -268,7 +277,7 @@ class ChatSession:
             # Delete events from database up to last user message if we have a session ID
             if self.agent.session_id:
                 try:
-                    self.agent.db_manager.delete_events_from_last_to_user_message(
+                    Events.delete_events_from_last_to_user_message(
                         self.agent.session_id
                     )
                     await self.send_event(

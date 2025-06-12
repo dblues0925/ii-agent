@@ -11,7 +11,7 @@ from ii_agent.utils import WorkspaceManager
 from ii_agent.agents.function_call import FunctionCallAgent
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
 from ii_agent.llm.token_counter import TokenCounter
-from ii_agent.db.manager import DatabaseManager
+from ii_agent.db.manager import Sessions
 from ii_agent.tools import get_system_tools
 from ii_agent.prompts.system_prompt import (
     SYSTEM_PROMPT,
@@ -56,7 +56,6 @@ class AgentFactory:
             config: Agent configuration
         """
         self.config = config
-        self.db_manager = DatabaseManager()
 
     def create_agent(
         self,
@@ -127,7 +126,7 @@ class AgentFactory:
     ):
         """Create a new database session or load existing one if it exists."""
         # Check if session already exists
-        existing_session = self.db_manager.get_session_by_id(session_id)
+        existing_session = Sessions.get_session_by_id(session_id)
 
         if existing_session:
             logger.info(
@@ -136,7 +135,7 @@ class AgentFactory:
             return
 
         # Create new session if it doesn't exist
-        self.db_manager.create_session(
+        Sessions.create_session(
             device_id=device_id,
             session_uuid=session_id,
             workspace_path=workspace_manager.root,
