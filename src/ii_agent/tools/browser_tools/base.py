@@ -50,6 +50,14 @@ class BrowserTool(LLMTool):
                 asyncio.set_event_loop(new_loop)
                 try:
                     return new_loop.run_until_complete(self._run(tool_input, message_history))
+                except Exception as e:
+                    error_msg = f"Browser operation failed: {type(e).__name__}: {str(e)}"
+                    if hasattr(self, 'name'):
+                        error_msg = f"{self.name} failed: {type(e).__name__}: {str(e)}"
+                    return ToolImplOutput(
+                        tool_output=error_msg,
+                        tool_result_message=error_msg
+                    )
                 finally:
                     new_loop.close()
             
@@ -59,5 +67,22 @@ class BrowserTool(LLMTool):
                 
         except RuntimeError:
             # No running loop, safe to use run_until_complete
-            loop = get_event_loop()
-            return loop.run_until_complete(self._run(tool_input, message_history))
+            try:
+                loop = get_event_loop()
+                return loop.run_until_complete(self._run(tool_input, message_history))
+            except Exception as e:
+                error_msg = f"Browser operation failed: {type(e).__name__}: {str(e)}"
+                if hasattr(self, 'name'):
+                    error_msg = f"{self.name} failed: {type(e).__name__}: {str(e)}"
+                return ToolImplOutput(
+                    tool_output=error_msg,
+                    tool_result_message=error_msg
+                )
+        except Exception as e:
+            error_msg = f"Unexpected browser error: {type(e).__name__}: {str(e)}"
+            if hasattr(self, 'name'):
+                error_msg = f"{self.name} encountered unexpected error: {type(e).__name__}: {str(e)}"
+            return ToolImplOutput(
+                tool_output=error_msg,
+                tool_result_message=error_msg
+            )
