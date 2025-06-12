@@ -6,7 +6,9 @@ from typing import Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
+from ii_agent.llm.base import ToolCall
 from ii_agent.agents.base import BaseAgent
+from ii_agent.agents.reviewer import ReviewerAgent
 from ii_agent.core.event import RealtimeEvent, EventType
 from ii_agent.core.storage.files import FileStore
 from ii_agent.db.manager import Sessions, Events
@@ -44,9 +46,12 @@ class ChatSession:
         self.file_store = file_store
         # Session state
         self.agent: Optional[BaseAgent] = None
+        self.reviewer_agent: Optional[ReviewerAgent] = None
         self.active_task: Optional[asyncio.Task] = None
         self.message_processor: Optional[asyncio.Task] = None
+        self.reviewer_message_processor: Optional[asyncio.Task] = None
         self.first_message = True
+        self.enable_reviewer = True# Flag to enable/disable reviewer
 
     async def send_event(self, event: RealtimeEvent):
         """Send an event to the client via WebSocket."""
@@ -156,10 +161,29 @@ class ChatSession:
             # Start message processor for this session
             self.message_processor = self.agent.start_message_processing()
 
+            # Check if reviewer is enabled in tool_args
+            self.enable_reviewer = init_content.tool_args.get("enable_reviewer", True)
+            if self.enable_reviewer:
+                # Create reviewer agent using factory
+                self.reviewer_agent = self.agent_factory.create_reviewer_agent(
+                    client,
+                    self.session_uuid,
+                    self.workspace_manager,
+                    self.websocket,
+                    init_content.tool_args,
+                    self.file_store,
+                )
+                
+                # Start message processor for reviewer
+                self.reviewer_message_processor = self.reviewer_agent.start_message_processing()
+                print("Initialized Reviewer")
+
             await self.send_event(
                 RealtimeEvent(
                     type=EventType.AGENT_INITIALIZED,
-                    content={"message": "Agent initialized"},
+                    content={
+                        "message": "Agent initialized" + (" with reviewer" if self.enable_reviewer else "")
+                    },
                 )
             )
         except ValidationError as e:
@@ -402,6 +426,10 @@ class ChatSession:
             # Run the agent with the query using the new async method
             await self.agent.run_agent_async(user_input, files, resume)
 
+            # If reviewer is enabled, run the reviewer agent
+            if self.enable_reviewer and self.reviewer_agent and not resume:
+                await self._run_reviewer_async(user_input)
+
         except Exception as e:
             logger.error(f"Error running agent: {str(e)}")
             import traceback
@@ -416,6 +444,76 @@ class ChatSession:
         finally:
             # Clean up the task reference
             self.active_task = None
+
+    async def _run_reviewer_async(self, user_input: str):
+        """Run the reviewer agent to analyze the main agent's output."""
+        try:
+            # Extract the final result from the agent's history
+            final_result = ""
+            found = False
+            for message in self.agent.history._message_lists[::-1]:
+                for sub_message in message:
+                    if hasattr(sub_message, 'tool_name') and sub_message.tool_name == "message_user" and isinstance(sub_message, ToolCall):
+                        found = True
+                        final_result = sub_message.tool_input["text"]
+                        break
+                if found:
+                    break
+            if not found:
+                logger.warning("No final result found from agent to review")
+                return
+            # Send notification that reviewer is starting
+            await self.send_event(
+                RealtimeEvent(
+                    type=EventType.SYSTEM,
+                    content={"message": "Reviewer agent is analyzing the output..."},
+                )
+            )
+            
+            # Run reviewer agent
+            reviewer_result = await asyncio.to_thread(
+                self.reviewer_agent.run_agent,
+                task=user_input,
+                result=final_result,
+                workspace_dir=str(self.workspace_manager.root)
+            )
+            import ipdb; ipdb.set_trace()
+            # Get the reviewer feedback
+            try:
+                review_feedback = self.reviewer_agent.history._message_lists[-1][0].text
+            except:
+                try:
+                    review_feedback = self.reviewer_agent.history._message_lists[-2][0].text
+                except:
+                    review_feedback = reviewer_result
+            
+            if review_feedback and review_feedback.strip():
+                # Send feedback to agent for improvement
+                await self.send_event(
+                    RealtimeEvent(
+                        type=EventType.SYSTEM,
+                        content={"message": "Applying reviewer feedback..."},
+                    )
+                )
+                
+                feedback_prompt = f"""Based on the reviewer's analysis, here is the feedback for improvement:
+
+{review_feedback}
+
+Please review this feedback and implement the suggested improvements to better complete the original task: "{user_input}"
+"""
+                
+                # Run agent with reviewer feedback
+                await self.agent.run_agent_async(feedback_prompt, [], True)
+                
+        except Exception as e:
+            logger.error(f"Error running reviewer: {str(e)}")
+            await self.send_event(
+                RealtimeEvent(
+                    type=EventType.ERROR,
+                    content={"message": f"Error running reviewer: {str(e)}"},
+                )
+            )
 
     def has_active_task(self) -> bool:
         """Check if there's an active task for this session."""
@@ -433,6 +531,10 @@ class ChatSession:
                     str(self.session_uuid), self.file_store
                 )
 
+        # Clean up reviewer agent
+        if self.reviewer_agent:
+            self.reviewer_agent.websocket = None
+
         # Cancel any running tasks
         if self.active_task and not self.active_task.done():
             self.active_task.cancel()
@@ -441,4 +543,6 @@ class ChatSession:
         # Clean up references
         self.websocket = None
         self.agent = None
+        self.reviewer_agent = None
         self.message_processor = None
+        self.reviewer_message_processor = None

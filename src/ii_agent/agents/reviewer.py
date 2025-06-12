@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from typing import Any, List, Optional
+from functools import partial
 import uuid
 from datetime import datetime
 
@@ -12,9 +13,9 @@ from ii_agent.llm.base import LLMClient, TextResult, ToolCallParameters
 from ii_agent.llm.context_manager.base import ContextManager
 from ii_agent.llm.message_history import MessageHistory
 from ii_agent.tools.base import ToolImplOutput, LLMTool
-from ii_agent.db.manager import DatabaseManager
 from ii_agent.tools import AgentToolManager
 from ii_agent.utils.workspace_manager import WorkspaceManager
+from ii_agent.db.manager import Events
 
 
 class ReviewerAgent(BaseAgent):
@@ -55,7 +56,7 @@ This agent conducts thorough reviews with emphasis on:
         logger_for_agent_logs: logging.Logger,
         context_manager: ContextManager,
         max_output_tokens_per_turn: int = 8192,
-        max_turns: int = 10,
+        max_turns: int = 200,
         websocket: Optional[WebSocket] = None,
         session_id: Optional[uuid.UUID] = None,
         interactive_mode: bool = True,
@@ -80,9 +81,6 @@ This agent conducts thorough reviews with emphasis on:
         self.context_manager = context_manager
         self.session_id = session_id
 
-        # Initialize database manager
-        self.db_manager = DatabaseManager()
-
         self.message_queue = message_queue
         self.websocket = websocket
 
@@ -92,28 +90,8 @@ This agent conducts thorough reviews with emphasis on:
                 try:
                     message: RealtimeEvent = await self.message_queue.get()
 
-                    # Save all events to database if we have a session
-                    if self.session_id is not None:
-                        self.db_manager.save_event(self.session_id, message)
-                    else:
-                        self.logger_for_agent_logs.info(
-                            f"No session ID, skipping event: {message}"
-                        )
-
-                    # Only send to websocket if this is not an event from the client and websocket exists
-                    if (
-                        message.type != EventType.USER_MESSAGE
-                        and self.websocket is not None
-                    ):
-                        try:
-                            await self.websocket.send_json(message.model_dump())
-                        except Exception as e:
-                            # If websocket send fails, just log it and continue processing
-                            self.logger_for_agent_logs.warning(
-                                f"Failed to send message to websocket: {str(e)}"
-                            )
-                            # Set websocket to None to prevent further attempts
-                            self.websocket = None
+                    # Reviewer agent doesn't need to send events to websocket
+                    # Just process the message and continue
 
                     self.message_queue.task_done()
                 except asyncio.CancelledError:
@@ -141,7 +119,7 @@ This agent conducts thorough reviews with emphasis on:
         """Start processing the message queue."""
         return asyncio.create_task(self._process_messages())
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -198,11 +176,16 @@ Now your turn to review the general agent's work.
 
             self.history.set_message_list(truncated_messages_for_llm)
 
-            model_response, _ = self.client.generate(
-                messages=truncated_messages_for_llm,
-                max_tokens=self.max_output_tokens,
-                tools=all_tool_params,
-                system_prompt=self.system_prompt,
+            loop = asyncio.get_event_loop()
+            model_response, _ = await loop.run_in_executor(
+                None,
+                partial(
+                    self.client.generate,
+                    messages=truncated_messages_for_llm,
+                    max_tokens=self.max_output_tokens,
+                    tools=all_tool_params,
+                    system_prompt=self.system_prompt,
+                ),
             )
 
             if len(model_response) == 0:
@@ -219,17 +202,6 @@ Now your turn to review the general agent's work.
 
             if len(pending_tool_calls) == 1:
                 tool_call = pending_tool_calls[0]
-
-                self.message_queue.put_nowait(
-                    RealtimeEvent(
-                        type=EventType.TOOL_CALL,
-                        content={
-                            "tool_call_id": tool_call.tool_call_id,
-                            "tool_name": tool_call.tool_name,
-                            "tool_input": tool_call.tool_input,
-                        },
-                    )
-                )
 
                 text_results = [
                     item for item in model_response if isinstance(item, TextResult)
@@ -248,7 +220,7 @@ Now your turn to review the general agent's work.
                         tool_result_message="Reviewer interrupted during tool execution"
                     )
                 
-                tool_result = self.tool_manager.run_tool(tool_call, self.history)
+                tool_result = await self.tool_manager.run_tool(tool_call, self.history)
                 self.add_tool_call_result(tool_call, tool_result)
                 if tool_call.tool_name == "return_control_to_user":
                     return ToolImplOutput(
@@ -269,32 +241,23 @@ Now your turn to review the general agent's work.
         """Add a tool call result to the history and send it to the message queue."""
         self.history.add_tool_call_result(tool_call, tool_result)
 
-        self.message_queue.put_nowait(
-            RealtimeEvent(
-                type=EventType.TOOL_RESULT,
-                content={
-                    "tool_call_id": tool_call.tool_call_id,
-                    "tool_name": tool_call.tool_name,
-                    "result": tool_result,
-                },
-            )
-        )
-
     def cancel(self):
         """Cancel the reviewer execution."""
         self.interrupted = True
         self.logger_for_agent_logs.info("Reviewer cancellation requested")
 
-    def run_agent(
+    async def run_agent_async(
         self,
         task: str,
         result: str,
         workspace_dir: str,
         resume: bool = False,
     ) -> str:
-        """Start a new reviewer run.
+        """Start a new reviewer run asynchronously.
 
         Args:
+            task: The task that was executed.
+            result: The result of the task execution.
             workspace_dir: The workspace directory to review.
             resume: Whether to resume the reviewer from the previous state,
                 continuing the dialog.
@@ -314,7 +277,30 @@ Now your turn to review the general agent's work.
             "workspace_dir": workspace_dir,
             "result": result,
         }
-        return self.run(tool_input, self.history)
+        return await self.run_async(tool_input, self.history)
+
+    def run_agent(
+        self,
+        task: str,
+        result: str,
+        workspace_dir: str,
+        resume: bool = False,
+    ) -> str:
+        """Start a new reviewer run synchronously.
+
+        Args:
+            task: The task that was executed.
+            result: The result of the task execution.
+            workspace_dir: The workspace directory to review.
+            resume: Whether to resume the reviewer from the previous state,
+                continuing the dialog.
+
+        Returns:
+            The review result string.
+        """
+        return asyncio.run(
+            self.run_agent_async(task, result, workspace_dir, resume)
+        )
 
     def clear(self):
         """Clear the dialog and reset interruption state."""
