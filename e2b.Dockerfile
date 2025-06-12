@@ -1,5 +1,4 @@
-# You can use most Debian-based base images
-FROM e2bdev/code-interpreter:latest
+FROM nikolaik/python-nodejs:python3.10-nodejs20-slim
 
 WORKDIR /app
 

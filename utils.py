@@ -114,7 +114,7 @@ async def create_workspace_manager_for_connection(
     # Create unique subdirectory for this connection
     sandbox_settings = SandboxSettings()
     if use_container_workspace == "e2b":
-        sandbox = Sandbox("6edq2s1ntcipb0fbxh57", timeout=900)
+        sandbox = Sandbox(os.getenv("E2B_TEMPLATE_ID"), timeout=3600)
         connection_id = sandbox.sandbox_id
         container_path = Path(sandbox_settings.work_dir)
     elif use_container_workspace == "docker":
