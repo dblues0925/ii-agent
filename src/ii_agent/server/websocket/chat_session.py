@@ -162,7 +162,7 @@ class ChatSession:
             self.message_processor = self.agent.start_message_processing()
 
             # Check if reviewer is enabled in tool_args
-            self.enable_reviewer = init_content.tool_args.get("enable_reviewer", True)
+            self.enable_reviewer = init_content.tool_args.get("enable_reviewer", False)
             if self.enable_reviewer:
                 # Create reviewer agent using factory
                 self.reviewer_agent = self.agent_factory.create_reviewer_agent(
@@ -477,15 +477,18 @@ class ChatSession:
                 result=final_result,
                 workspace_dir=str(self.workspace_manager.root)
             )
-            import ipdb; ipdb.set_trace()
             # Get the reviewer feedback
-            try:
-                review_feedback = self.reviewer_agent.history._message_lists[-1][0].text
-            except:
-                try:
-                    review_feedback = self.reviewer_agent.history._message_lists[-2][0].text
-                except:
-                    review_feedback = reviewer_result
+            review_feedback = "No feedback"
+            found = False
+            for message in self.reviewer_agent.history._message_lists[::-1]:
+                for sub_message in message:
+                    if hasattr(sub_message, 'tool_name') and sub_message.tool_name == "message_user" and isinstance(sub_message, ToolCall):
+                        if hasattr(sub_message, 'tool_input') and 'text' in sub_message.tool_input:
+                            review_feedback = sub_message.tool_input["text"]
+                            found = True
+                            break
+                if found:
+                    break
             
             if review_feedback and review_feedback.strip():
                 # Send feedback to agent for improvement
