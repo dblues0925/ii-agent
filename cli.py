@@ -152,33 +152,29 @@ async def async_main():
     )
 
 
-    reviewer_agent = ReviewerAgent(
-        system_prompt=REVIEWER_SYSTEM_PROMPT,
-        client=client,
-        tools=tools,
-        workspace_manager=workspace_manager,
-        message_queue=queue,
-        logger_for_agent_logs=logger_for_agent_logs,
-        context_manager=context_manager,
-        max_output_tokens_per_turn=MAX_OUTPUT_TOKENS_PER_TURN,
-        max_turns=MAX_TURNS,
-        session_id=session_id,
-    )
-
-    if 0:
-        message_task = reviewer_agent.start_message_processing()
-        loop = asyncio.get_running_loop()   
-        review_task = loop.run_in_executor( 
-            None,  # Uses default ThreadPoolExecutor
-            lambda: reviewer_agent.run_agent(
-                task="Create a snake game with snake is pacman icon", 
-                workspace_dir="/home/pvduy/duy/repos/ii-agent/workspace/1cd8c4d0-eecd-4bbf-b4e5-2c530b80b316/"
-            )
+    # Create reviewer agent only if enabled
+    enable_reviewer = args.enable_reviewer if hasattr(args, 'enable_reviewer') else False
+    reviewer_agent = None
+    
+    if enable_reviewer:
+        reviewer_agent = ReviewerAgent(
+            system_prompt=REVIEWER_SYSTEM_PROMPT,
+            client=client,
+            tools=tools,
+            workspace_manager=workspace_manager,
+            message_queue=queue,
+            logger_for_agent_logs=logger_for_agent_logs,
+            context_manager=context_manager,
+            max_output_tokens_per_turn=MAX_OUTPUT_TOKENS_PER_TURN,
+            max_turns=MAX_TURNS,
+            session_id=session_id,
         )
-        logger_for_agent_logs.info(f"Reviewer: {review_task}")  
+
     # Create background task for message processing
-    message_task = reviewer_agent.start_message_processing()
     message_task = agent.start_message_processing()
+    reviewer_message_task = None
+    if reviewer_agent:
+        reviewer_message_task = reviewer_agent.start_message_processing()
 
     loop = asyncio.get_running_loop()
     # Main interaction loop
@@ -215,33 +211,44 @@ async def async_main():
                         break
                         
                 logger_for_agent_logs.info(f"Agent: {result}")
-                status = await loop.run_in_executor(
-                    None,  # Uses default ThreadPoolExecutor
-                    lambda: reviewer_agent.run_agent(
-                        task=user_input,
-                        result=final_result,
-                        workspace_dir=str(workspace_path),
-                    ),
-                )
-                try:
-                    review_result = reviewer_agent.history._message_lists[-1][0].text
-                except:
-                    review_result = reviewer_agent.history._message_lists[-2][0].text
-                logger_for_agent_logs.info(f"Reviewer: {review_result}")
                 
-                # Continue agent with reviewer feedback
-                if review_result and review_result.strip():
-                    logger_for_agent_logs.info("\nFeeding reviewer feedback to agent for improvement...")
-                    feedback_prompt = f"""Based on the reviewer's analysis, here is the feedback for improvement:
+                # Run reviewer if enabled
+                if reviewer_agent and final_result:
+                    logger_for_agent_logs.info("\nReviewer agent is analyzing the output...")
+                    status = await loop.run_in_executor(
+                        None,  # Uses default ThreadPoolExecutor
+                        lambda: reviewer_agent.run_agent(
+                            task=user_input,
+                            result=final_result,
+                            workspace_dir=str(workspace_path),
+                        ),
+                    )
+                    
+                    # Extract reviewer feedback
+                    try:
+                        review_result = reviewer_agent.history._message_lists[-1][0].text
+                    except:
+                        try:
+                            review_result = reviewer_agent.history._message_lists[-2][0].text
+                        except:
+                            review_result = ""
+                    
+                    if review_result:
+                        logger_for_agent_logs.info(f"Reviewer: {review_result}")
+                    
+                    # Continue agent with reviewer feedback
+                    if review_result and review_result.strip():
+                        logger_for_agent_logs.info("\nFeeding reviewer feedback to agent for improvement...")
+                        feedback_prompt = f"""Based on the reviewer's analysis, here is the feedback for improvement:
 
 {review_result}
 
 Please review this feedback and implement the suggested improvements to better complete the original task: "{user_input}"
 """
-                    
-                    # Run agent with reviewer feedback
-                    improved_result = await agent.run_agent_async(feedback_prompt, resume=True)
-                    logger_for_agent_logs.info(f"Agent improvement response: {improved_result}")
+                        
+                        # Run agent with reviewer feedback
+                        improved_result = await agent.run_agent_async(feedback_prompt, resume=True)
+                        logger_for_agent_logs.info(f"Agent improvement response: {improved_result}")
             except (KeyboardInterrupt, asyncio.CancelledError):
                 agent.cancel()
                 logger_for_agent_logs.info("Agent cancelled")
@@ -257,6 +264,8 @@ Please review this feedback and implement the suggested improvements to better c
     finally:
         # Cleanup tasks
         message_task.cancel()
+        if reviewer_message_task:
+            reviewer_message_task.cancel()
 
     console.print("[bold]Goodbye![/bold]")
 
