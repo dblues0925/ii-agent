@@ -88,8 +88,11 @@ class PexpectSessionManager:
         command: str,
         session: PexpectSession,
         timeout: int,
+        view: bool = False,
     ) -> str:
-        formated_output = self._format_output_raw(raw_output, command, session, timeout)
+        formated_output = self._format_output_raw(
+            raw_output, command, session, timeout, view
+        )
         if self.use_relative_path:
             return formated_output.replace(self.cwd, self.HOME_DIR).replace(
                 self.work_dir, self.HOME_DIR
@@ -285,9 +288,13 @@ class PexpectSessionManager:
         Args:
             id: Session identifier
             command: Command to execute
+            exec_dir: Working directory for command execution
+            timeout: Timeout for command execution
+            kwargs: Additional keyword arguments
 
-        Returns:
-            Dict containing execution result and current view
+        Returns: SessionResult containing execution result and current view
+            output: root@host: previous_dir$ command\noutput\nroot@host: current_dir$
+            success: True or False
         """
         if exec_dir:
             command = f"cd {exec_dir} && {command}"
@@ -334,7 +341,9 @@ class PexpectSessionManager:
             id: Session identifier
 
         Returns:
-            Dict containing session state and output
+            SessionResult containing current view of shell history
+            output: Full view of shell history concatenated with current directory
+            success: True or False
         """
         session = self.sessions.get(id)
         if not session:
