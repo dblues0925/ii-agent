@@ -47,5 +47,8 @@ class BrowserPressKeyTool(BrowserTool):
 
             return utils.format_screenshot_tool_output(state.screenshot, msg)
         except Exception as e:
-            error_msg = f"Press key operation failed: {type(e).__name__}: {str(e)}"
-            return ToolImplOutput(tool_output=error_msg, tool_result_message=error_msg)
+            return ToolImplOutput(
+                f"Failed to press key: {type(e).__name__}: {str(e)}",
+                "Failed to press key",
+                auxiliary_data={"success": False, "error": str(e)},
+            )
