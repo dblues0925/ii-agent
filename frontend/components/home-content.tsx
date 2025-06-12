@@ -98,6 +98,7 @@ export default function HomeContent() {
       return;
     }
 
+    dispatch({ type: "SET_REQUIRE_CLEAR_FILES", payload: true });
     dispatch({ type: "SET_LOADING", payload: true });
     dispatch({ type: "SET_CURRENT_QUESTION", payload: "" });
     dispatch({ type: "SET_COMPLETED", payload: false });
@@ -109,6 +110,16 @@ export default function HomeContent() {
         setSessionId(id);
       }
     }
+
+    // Show all hidden messages
+    state.messages.forEach((message) => {
+      if (message.isHidden) {
+        dispatch({
+          type: "UPDATE_MESSAGE",
+          payload: { ...message, isHidden: false },
+        });
+      }
+    });
 
     const newUserMessage: Message = {
       id: Date.now().toString(),

@@ -259,15 +259,15 @@ export function useAppEvents({
           break;
 
         case AgentEvent.AGENT_RESPONSE:
-          safeDispatch({
-            type: "ADD_MESSAGE",
-            payload: {
-              id: Date.now().toString(),
-              role: "assistant",
-              content: data.content.text as string,
-              timestamp: Date.now(),
-            },
-          });
+          // safeDispatch({
+          //   type: "ADD_MESSAGE",
+          //   payload: {
+          //     id: Date.now().toString(),
+          //     role: "assistant",
+          //     content: data.content.text as string,
+          //     timestamp: Date.now(),
+          //   },
+          // });
           safeDispatch({ type: "SET_COMPLETED", payload: true });
           safeDispatch({ type: "SET_LOADING", payload: false });
           break;

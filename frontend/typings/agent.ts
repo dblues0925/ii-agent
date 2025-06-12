@@ -68,6 +68,7 @@ export enum TOOL {
   RETURN_CONTROL_TO_USER = "return_control_to_user",
   SLIDE_DECK_INIT = "slide_deck_init",
   SLIDE_DECK_COMPLETE = "slide_deck_complete",
+  DISPLAY_IMAGE = "display_image",
 
   // browser tools
   BROWSER_VIEW = "browser_view",
@@ -121,6 +122,7 @@ export interface Message {
   action?: ActionStep;
   files?: string[]; // File names
   fileContents?: { [filename: string]: string }; // Base64 content of files
+  isHidden?: boolean;
 }
 
 export interface ISession {

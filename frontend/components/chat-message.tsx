@@ -45,6 +45,11 @@ const ChatMessage = ({
 }: ChatMessageProps) => {
   const { state, dispatch } = useAppContext();
   const [showQuestionInput, setShowQuestionInput] = useState(false);
+  const [pendingFilesCount, setPendingFilesCount] = useState(0);
+
+  const handleFilesChange = (count: number) => {
+    setPendingFilesCount(count);
+  };
 
   useEffect(() => {
     if (isReplayMode && !state.isLoading && state.messages.length > 0) {
@@ -93,7 +98,9 @@ const ChatMessage = ({
         className={`p-4 pt-0 w-full h-full ${
           isReplayMode && !showQuestionInput
             ? "max-h-[calc(100vh-167px)]"
-            : "max-h-[calc(100vh-230px)]"
+            : pendingFilesCount > 0
+            ? "max-h-[calc(100vh-330px)]"
+            : "max-h-[calc(100vh-210px)]"
         } overflow-y-auto relative`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -104,7 +111,9 @@ const ChatMessage = ({
             key={message.id}
             className={`mb-4 ${
               message.role === "user" ? "text-right" : "text-left"
-            } ${message.role === "user" && !message.files && "mb-8"}`}
+            } ${message.role === "user" && !message.files && "mb-8"} ${
+              message.isHidden ? "hidden" : ""
+            }`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * index, duration: 0.3 }}
@@ -359,7 +368,7 @@ const ChatMessage = ({
         showQuestionInput ? (
           <QuestionInput
             hideSettings
-            className="p-4 pb-0 w-full max-w-none"
+            className="px-4 w-full max-w-none"
             textareaClassName="h-30 w-full"
             placeholder="Ask me anything..."
             value={state.currentQuestion}
@@ -368,6 +377,7 @@ const ChatMessage = ({
             handleSubmit={handleQuestionSubmit}
             handleEnhancePrompt={handleEnhancePrompt}
             handleCancel={handleCancel}
+            onFilesChange={handleFilesChange}
           />
         ) : (
           <motion.div
@@ -415,6 +425,7 @@ const ChatMessage = ({
             handleSubmit={handleQuestionSubmit}
             handleEnhancePrompt={handleEnhancePrompt}
             handleCancel={handleCancel}
+            onFilesChange={handleFilesChange}
           />
         </motion.div>
       )}
