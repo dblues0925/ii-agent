@@ -11,6 +11,6 @@ class IIAgentConfig(BaseSettings):
         file_store_path: The path to the file store.
     """
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
     file_store: str = Field(default="local")
     file_store_path: str = Field(default="~/.ii_agent/file_store")
