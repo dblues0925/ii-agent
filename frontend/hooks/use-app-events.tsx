@@ -106,7 +106,6 @@ export function useAppEvents({
 
         case AgentEvent.PROCESSING:
           safeDispatch({ type: "SET_LOADING", payload: true });
-          safeDispatch({ type: "TOGGLE_ENABLE_REVIEWER" });
           break;
 
         case AgentEvent.WORKSPACE_INFO:

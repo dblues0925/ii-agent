@@ -20,6 +20,7 @@ from ii_agent.server.models.messages import (
     InitAgentContent,
     EnhancePromptContent,
     EditQueryContent,
+    ReviewResultContent,
 )
 from ii_agent.server.factories import ClientFactory, AgentFactory
 
@@ -109,6 +110,7 @@ class ChatSession:
                 "cancel": self._handle_cancel,
                 "edit_query": self._handle_edit_query,
                 "enhance_prompt": self._handle_enhance_prompt,
+                "review_result": self._handle_review_result,
             }
 
             handler = handlers.get(msg_type)
@@ -404,6 +406,41 @@ class ChatSession:
                     content={"message": f"Invalid enhance_prompt content: {str(e)}"},
                 )
             )
+            
+    async def _handle_review_result(self, content: dict):
+        """Handle reviewer's feedback."""
+        try:
+            if not self.agent:
+                await self.send_event(
+                    RealtimeEvent(
+                        type=EventType.ERROR,
+                        content={"message": "No active agent for this session"},
+                    )
+                )
+                return
+           
+            review_content = ReviewResultContent(**content)
+            user_input = review_content.user_input
+            
+            if not user_input:
+                await self.send_event(
+                    RealtimeEvent(
+                        type=EventType.ERROR,
+                        content={"message": "No user query found to review"},
+                    )
+                )
+                return
+                
+            await self._run_reviewer_async(user_input)
+
+        except Exception as e:
+            logger.error(f"Error handling review request: {str(e)}")
+            await self.send_event(
+                RealtimeEvent(
+                    type=EventType.ERROR,
+                    content={"message": f"Error handling review request: {str(e)}"},
+                )
+            )
 
     async def _run_agent_async(
         self, user_input: str, resume: bool = False, files: list = []
@@ -425,10 +462,6 @@ class ChatSession:
             )
             # Run the agent with the query using the new async method
             await self.agent.run_agent_async(user_input, files, resume)
-
-            # If reviewer is enabled, run the reviewer agent
-            if self.enable_reviewer and self.reviewer_agent and not resume:
-                await self._run_reviewer_async(user_input)
 
         except Exception as e:
             logger.error(f"Error running agent: {str(e)}")

@@ -6,7 +6,6 @@ import {
   Settings2,
   Loader2,
   Folder,
-  SearchCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
@@ -470,10 +469,6 @@ const QuestionInput = ({
     }
   }, [isGoogleDriveConnected]);
 
-  const handleEnableReview = () => {
-    dispatch({ type: "TOGGLE_ENABLE_REVIEWER" });
-  };
-
   useEffect(() => {
     if (onFilesChange) {
       onFilesChange(files.length);
@@ -706,23 +701,6 @@ const QuestionInput = ({
           </div>
 
           <div className="flex items-center gap-x-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`hover:bg-gray-700/50 size-10 rounded-full cursor-pointer border border-[#ffffff0f] shadow-sm ${
-                    state.isReviewerEnabled
-                      ? "bg-[#BAE9F4] text-neutral-900"
-                      : "text-gray-400"
-                  }`}
-                  onClick={handleEnableReview}
-                >
-                  <SearchCheck className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Review Results</TooltipContent>
-            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

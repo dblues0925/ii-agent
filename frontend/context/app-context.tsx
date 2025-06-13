@@ -33,7 +33,6 @@ interface AppState {
   wsConnectionState: WebSocketConnectionState;
   isAgentInitialized: boolean;
   requireClearFiles: boolean;
-  isReviewerEnabled: boolean;
 }
 
 // Define action types
@@ -62,7 +61,6 @@ export type AppAction =
   | { type: "SET_WS_CONNECTION_STATE"; payload: WebSocketConnectionState }
   | { type: "SET_AGENT_INITIALIZED"; payload: boolean }
   | { type: "SET_REQUIRE_CLEAR_FILES"; payload: boolean }
-  | { type: "TOGGLE_ENABLE_REVIEWER" }
   | {
       type: "HANDLE_EVENT";
       payload: {
@@ -99,7 +97,6 @@ const initialState: AppState = {
   selectedModel: AVAILABLE_MODELS[0],
   isAgentInitialized: false,
   requireClearFiles: false,
-  isReviewerEnabled: false,
 };
 
 // Create the context
@@ -176,8 +173,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, isAgentInitialized: action.payload };
     case "SET_REQUIRE_CLEAR_FILES":
       return { ...state, requireClearFiles: action.payload };
-    case "TOGGLE_ENABLE_REVIEWER":
-      return { ...state, isReviewerEnabled: !state.isReviewerEnabled };
+
     default:
       return state;
   }
