@@ -367,7 +367,6 @@ const ChatMessage = ({
             </div>
             {state.toolSettings?.enable_reviewer && (
               <div
-                onClick={handleReviewSession}
                 className={`group cursor-pointer flex items-start gap-2 px-3 py-2 bg-[#35363a] rounded-xl backdrop-blur-sm 
       shadow-sm
       transition-all duration-200 ease-out
