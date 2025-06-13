@@ -141,7 +141,7 @@ export default function HomeContent() {
         type: "init_agent",
         content: {
           model_name: state.selectedModel,
-          tool_args: { ...tool_args, enable_reviewer: true },
+          tool_args,
           thinking_tokens,
         },
       });
@@ -200,7 +200,7 @@ export default function HomeContent() {
         type: "init_agent",
         content: {
           model_name: state.selectedModel,
-          tool_args: { ...tool_args, enable_reviewer: true },
+          tool_args,
           thinking_tokens,
         },
       });
