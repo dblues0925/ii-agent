@@ -466,7 +466,7 @@ class ChatSession:
             await self.send_event(
                 RealtimeEvent(
                     type=EventType.SYSTEM,
-                    content={"message": "Reviewer agent is analyzing the output..."},
+                    content={"type": "reviewer_agent", "message": "Reviewer agent is analyzing the output..."},
                 )
             )
             
@@ -477,7 +477,6 @@ class ChatSession:
                 result=final_result,
                 workspace_dir=str(self.workspace_manager.root)
             )
-            import ipdb; ipdb.set_trace()
             # Get the reviewer feedback
             try:
                 review_feedback = self.reviewer_agent.history._message_lists[-1][0].text
@@ -492,7 +491,7 @@ class ChatSession:
                 await self.send_event(
                     RealtimeEvent(
                         type=EventType.SYSTEM,
-                        content={"message": "Applying reviewer feedback..."},
+                        content={"type": "reviewer_agent", "message": "Applying reviewer feedback..."},
                     )
                 )
                 

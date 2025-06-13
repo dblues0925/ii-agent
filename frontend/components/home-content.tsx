@@ -141,7 +141,10 @@ export default function HomeContent() {
         type: "init_agent",
         content: {
           model_name: state.selectedModel,
-          tool_args,
+          tool_args: {
+            ...tool_args,
+            enable_reviewer: state.isReviewerEnabled,
+          },
           thinking_tokens,
         },
       });

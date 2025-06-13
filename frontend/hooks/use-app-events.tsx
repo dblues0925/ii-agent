@@ -55,6 +55,35 @@ export function useAppEvents({
           safeDispatch({ type: "SET_AGENT_INITIALIZED", payload: true });
           break;
 
+        case AgentEvent.SYSTEM:
+          if (data.content.type === "reviewer_agent") {
+            safeDispatch({
+              type: "ADD_MESSAGE",
+              payload: {
+                id: data.id,
+                role: "assistant",
+                action: {
+                  type: TOOL.REVIEWER_AGENT,
+                  data: {
+                    content: data.content.message as string,
+                  },
+                },
+                timestamp: Date.now(),
+              },
+            });
+          } else {
+            safeDispatch({
+              type: "ADD_MESSAGE",
+              payload: {
+                id: data.id,
+                role: "assistant",
+                content: data.content.message as string,
+                timestamp: Date.now(),
+              },
+            });
+          }
+          break;
+
         case AgentEvent.USER_MESSAGE:
           safeDispatch({
             type: "ADD_MESSAGE",
@@ -77,6 +106,7 @@ export function useAppEvents({
 
         case AgentEvent.PROCESSING:
           safeDispatch({ type: "SET_LOADING", payload: true });
+          safeDispatch({ type: "TOGGLE_ENABLE_REVIEWER" });
           break;
 
         case AgentEvent.WORKSPACE_INFO:
