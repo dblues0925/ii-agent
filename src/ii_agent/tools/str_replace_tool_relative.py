@@ -19,7 +19,6 @@ import logging
 from ii_agent.tools.clients.str_replace_client import (
     StrReplaceClient,
 )
-from ii_agent.tools.clients.config import RemoteClientConfig
 
 logger = logging.getLogger(__name__)
 
@@ -104,26 +103,15 @@ Notes for using the `str_replace` command:\n
     def __init__(
         self,
         workspace_manager: WorkspaceManager,
-        ignore_indentation_for_str_replace: bool = False,
-        expand_tabs: bool = False,
         message_queue: Queue | None = None,
-        client_config: Optional[RemoteClientConfig] = None,
+        str_replace_client: StrReplaceClient = None,
     ):
         super().__init__()
         self.workspace_manager = workspace_manager
         self.message_queue = message_queue
+        self.str_replace_client = str_replace_client
 
-        # Create client configuration
-        if client_config is None:
-            client_config = RemoteClientConfig(
-                mode="local",
-                ignore_indentation_for_str_replace=ignore_indentation_for_str_replace,
-                expand_tabs=expand_tabs,
-            )
-
-        self.str_replace_client = StrReplaceClient(client_config)
-
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

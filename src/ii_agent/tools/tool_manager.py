@@ -9,6 +9,7 @@ from ii_agent.llm.base import LLMClient
 from ii_agent.llm.context_manager.llm_summarizing import LLMSummarizingContextManager
 from ii_agent.llm.token_counter import TokenCounter
 from ii_agent.sandbox.config import SandboxSettings
+from ii_agent.tools.clients.str_replace_client import StrReplaceClient
 from ii_agent.tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
@@ -95,14 +96,16 @@ def get_system_tools(
     tools = []
     config = None
     if workspace_manager.workspace_mode == WorkSpaceMode.E2B:
-        sandbox = Sandbox.connect(workspace_manager.session_id)
+        sandbox = Sandbox.connect(
+            workspace_manager.e2b_sandbox_id
+        )  # Quick fix needs refactoring
         host = sandbox.get_host(17300)
         config = RemoteClientConfig(
             mode="e2b",
             server_url=f"https://{host}",
             ignore_indentation_for_str_replace=False,
             expand_tabs=False,
-            container_id=workspace_manager.session_id,
+            container_id=workspace_manager.e2b_sandbox_id,
         )
         tools.append(
             RegisterDeploymentTool(workspace_manager=workspace_manager, config=config)
@@ -131,13 +134,14 @@ def get_system_tools(
             StaticDeployTool(workspace_manager=workspace_manager)
         )  # Todo: Replace this with local mode of register deployment tool
     terminal_client = TerminalClient(config)
+    str_replace_client = StrReplaceClient(config)
 
     tools.extend(
         [
             StrReplaceEditorToolRelative(
                 workspace_manager=workspace_manager,
                 message_queue=message_queue,
-                client_config=config,
+                str_replace_client=str_replace_client,
             ),
             MessageTool(),
             WebSearchTool(),
@@ -154,6 +158,7 @@ def get_system_tools(
             ),
             SlideDeckCompleteTool(
                 workspace_manager=workspace_manager,
+                str_replace_client=str_replace_client,
             ),
             DisplayImageTool(workspace_manager=workspace_manager),
         ]

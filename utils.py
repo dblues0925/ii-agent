@@ -1,12 +1,6 @@
 from argparse import ArgumentParser
-from enum import Enum
 from ii_agent.utils.constants import DEFAULT_MODEL
-
-
-class WorkSpaceMode(Enum):
-    DOCKER = "docker"
-    E2B = "e2b"
-    LOCAL = None
+from ii_agent.utils.workspace_manager import WorkSpaceMode
 
 
 def parse_common_args(parser: ArgumentParser):
@@ -32,9 +26,9 @@ def parse_common_args(parser: ArgumentParser):
     parser.add_argument(
         "--use-container-workspace",
         help="Use docker container to run commands in, or e2b sandbox",
-        type=lambda x: WorkSpaceMode(x),
-        choices=[t.value for t in WorkSpaceMode],
-        default=None,
+        default=WorkSpaceMode.LOCAL,
+        type=WorkSpaceMode,
+        choices=list(WorkSpaceMode),
     )
     parser.add_argument(
         "--minimize-stdout-logs",

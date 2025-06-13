@@ -68,7 +68,7 @@ class RegisterDeploymentTool(LLMTool):
         host = sandbox.get_host(int(port))
         return f"http://{host}"
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

@@ -45,19 +45,17 @@ class ConnectionManager:
             session_uuid = uuid.UUID(session_uuid)
 
         workspace_path = Path(self.workspace_root).resolve()
-        connection_workspace = workspace_path / str(session_uuid)
-        connection_workspace.mkdir(parents=True, exist_ok=True)
         workspace_manager = WorkspaceManager(
-            root=connection_workspace,
+            parent_dir=workspace_path,
+            session_id=str(session_uuid),
             workspace_mode=self.use_container_workspace,
         )
-        await workspace_manager.init()
+        await workspace_manager.start_sandbox()
 
         # Create a new chat session for this connection
         session = ChatSession(
             websocket,
             workspace_manager,
-            session_uuid,
             self.client_factory,
             self.agent_factory,
             self.file_store,

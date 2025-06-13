@@ -93,7 +93,6 @@ class AgentFactory:
             client,
             workspace_manager,
             websocket,
-            session_id,
             tool_args,
             context_manager,
             logger_for_agent_logs,
@@ -157,7 +156,6 @@ class AgentFactory:
         client: LLMClient,
         workspace_manager: WorkspaceManager,
         websocket: WebSocket,
-        session_id: uuid.UUID,
         tool_args: Dict[str, Any],
         context_manager,
         logger: logging.Logger,
@@ -165,6 +163,7 @@ class AgentFactory:
     ):
         """Create the actual agent instance."""
         # Initialize agent queue and tools
+        session_id = workspace_manager.session_id
         queue = asyncio.Queue()
         tools = get_system_tools(
             client=client,
@@ -175,9 +174,9 @@ class AgentFactory:
 
         # Choose system prompt based on tool args
         system_prompt = (
-            get_system_prompt_with_seq_thinking(self.config.workspace_mode)
+            get_system_prompt_with_seq_thinking(workspace_manager.workspace_mode)
             if tool_args.get("sequential_thinking", False)
-            else get_system_prompt(self.config.workspace_mode)
+            else get_system_prompt(workspace_manager.workspace_mode)
         )
 
         # try to get history from file store

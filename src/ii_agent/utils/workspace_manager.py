@@ -1,7 +1,6 @@
 from enum import Enum
 import os
 from pathlib import Path
-import uuid
 
 from e2b import Sandbox
 
@@ -12,32 +11,55 @@ from ii_agent.sandbox.docker_sandbox import DockerSandbox
 class WorkSpaceMode(Enum):
     DOCKER = "docker"
     E2B = "e2b"
-    LOCAL = None
+    LOCAL = "local"
+
+    def __str__(self):
+        return self.value
 
 
 class WorkspaceManager:
     root: Path
     session_id: str
     workspace_mode: WorkSpaceMode
+    e2b_sandbox_id: str
 
     def __init__(
-        self, workspace_root: str, workspace_mode: WorkSpaceMode = WorkSpaceMode.LOCAL
+        self,
+        parent_dir: str,
+        session_id: str,
+        workspace_mode: WorkSpaceMode = WorkSpaceMode.LOCAL,
     ):
-        self.workspace_root = workspace_root
+        # Make new workspace directory
+        self.root = Path(parent_dir).resolve() / session_id
+        self.root.mkdir(parents=True, exist_ok=True)
+        # Container configuration
         self.workspace_mode = workspace_mode
+        self.session_id = session_id
+        self.container_workspace = (
+            None if self._is_local_workspace() else Path(SandboxSettings().work_dir)
+        )
+        self.e2b_sandbox_id = None
 
-    async def init(self):
-        (
-            self.root,
-            self.container_workspace,
-            self.session_id,
-        ) = await self._init_workspace(self.workspace_root, self.deploy_mode)
+    async def start_sandbox(self):
+        if self.workspace_mode == WorkSpaceMode.E2B:
+            print("Starting e2b sandbox...")
+            sandbox = Sandbox(
+                os.getenv("E2B_TEMPLATE_ID"),
+                api_key=os.getenv("E2B_API_KEY"),
+                timeout=3600,
+            )
+            self.e2b_sandbox_id = sandbox.sandbox_id
+        elif self.workspace_mode == WorkSpaceMode.DOCKER:
+            print("Starting docker sandbox...")
+            await self._create_container_workspace(container_name=self.session_id)
+        else:
+            print("Local workspace, skipping...")
 
     def _is_local_workspace(self) -> bool:
-        return self.deploy_mode == WorkSpaceMode.LOCAL
+        return self.workspace_mode == WorkSpaceMode.LOCAL
 
     def use_container_workspace(self) -> bool:
-        return self.deploy_mode != WorkSpaceMode.LOCAL
+        return self.workspace_mode != WorkSpaceMode.LOCAL
 
     def workspace_path(self, path: Path | str) -> Path:
         """Given a path, possibly in a container workspace, return the absolute local path."""
@@ -85,32 +107,6 @@ class WorkspaceManager:
                 return abs_path
         except ValueError:
             return abs_path
-
-    async def _init_workspace(
-        self, workspace_root: str, deploy_mode: WorkSpaceMode = WorkSpaceMode.LOCAL
-    ):
-        """Create a new workspace manager instance for a websocket connection."""
-        session_id, container_path = await self._create_workspace(deploy_mode)
-        workspace_path = Path(workspace_root).resolve()
-        session_workspace = workspace_path / session_id
-        session_workspace.mkdir(parents=True, exist_ok=True)
-
-        return session_workspace, container_path, session_id
-
-    async def _create_workspace(self, deploy_mode: WorkSpaceMode = WorkSpaceMode.LOCAL):
-        sandbox_settings = SandboxSettings()
-        if deploy_mode == WorkSpaceMode.E2B:
-            sandbox = Sandbox(os.getenv("E2B_TEMPLATE_ID"), timeout=3600)
-            session_id = sandbox.sandbox_id
-            container_path = Path(sandbox_settings.work_dir)
-        elif deploy_mode == WorkSpaceMode.DOCKER:
-            session_id = str(uuid.uuid4())
-            await self._create_container_workspace(container_name=session_id)
-            container_path = Path(sandbox_settings.work_dir)
-        else:
-            session_id = str(uuid.uuid4())
-            container_path = None
-        return session_id, container_path
 
     async def _create_container_workspace(self, container_name: str):
         settings = SandboxSettings()

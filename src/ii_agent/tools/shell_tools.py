@@ -36,7 +36,7 @@ class ShellExecTool(LLMTool):
         super().__init__()
         self.terminal_client = terminal_client
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -81,7 +81,7 @@ class ShellViewTool(LLMTool):
         super().__init__()
         self.terminal_client = terminal_client
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -125,7 +125,7 @@ class ShellWaitTool(LLMTool):
         super().__init__()
         self.terminal_client = terminal_client
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -166,7 +166,7 @@ class ShellKillProcessTool(LLMTool):
         super().__init__()
         self.terminal_client = terminal_client
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -213,7 +213,7 @@ class ShellWriteToProcessTool(LLMTool):
         super().__init__()
         self.terminal_client = terminal_client
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

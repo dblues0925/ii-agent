@@ -118,7 +118,7 @@ Notes for using the `str_replace` command:\n
 
         self.str_replace_client = StrReplaceClient(client_config)
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

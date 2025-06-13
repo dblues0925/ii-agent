@@ -1,8 +1,8 @@
 from typing import Any, Optional
-import os
 from ii_agent.llm.message_history import MessageHistory
 from ii_agent.sandbox.config import SandboxSettings
 from ii_agent.tools.base import LLMTool, ToolImplOutput
+from ii_agent.tools.clients.str_replace_client import StrReplaceClient
 from ii_agent.tools.clients.terminal_client import TerminalClient
 from ii_agent.utils.workspace_manager import WorkspaceManager
 
@@ -33,16 +33,23 @@ class SlideDeckInitTool(LLMTool):
     ) -> ToolImplOutput:
         try:
             # Create the presentation directory if it doesn't exist
-            presentation_dir = f"{self.workspace_manager.root}/presentation"
-            os.makedirs(presentation_dir, exist_ok=True)
+            presentation_dir = str(
+                self.workspace_manager.relative_path("./presentation")
+            )
+            self.terminal_client.shell_exec(
+                self.sandbox_settings.system_shell,
+                f"mkdir -p {presentation_dir}",
+                exec_dir=str(self.workspace_manager.root_path()),
+                timeout=999999,  # Quick fix: No Timeout
+            )
 
             # Clone the reveal.js repository to the specified path
             clone_command = "git clone https://github.com/Intelligent-Internet/reveal.js.git presentation/reveal.js"
             clone_result = self.terminal_client.shell_exec(
                 self.sandbox_settings.system_shell,
                 clone_command,
-                exec_dir=self.sandbox_settings.work_dir,
-                timeout=None,  # Do not timeout
+                exec_dir=str(self.workspace_manager.root_path()),
+                timeout=999999,  # Quick fix: No Timeout
             )
 
             if not clone_result.success:
@@ -57,8 +64,8 @@ class SlideDeckInitTool(LLMTool):
             install_result = self.terminal_client.shell_exec(
                 self.sandbox_settings.system_shell,
                 install_command,
-                exec_dir=f"{self.sandbox_settings.work_dir}/presentation/reveal.js",
-                timeout=None,  # Do not timeout
+                exec_dir=f"{self.workspace_manager.root_path()}/presentation/reveal.js",
+                timeout=999999,  # Quick fix: No Timeout
             )
 
             if not install_result.success:
@@ -69,7 +76,7 @@ class SlideDeckInitTool(LLMTool):
                 )
 
             return ToolImplOutput(
-                "Successfully initialized slide deck. Repository cloned into `./presentation/reveal.js` and dependencies installed (npm install).",
+                f"Successfully initialized slide deck in {self.workspace_manager.relative_path(presentation_dir)}. Repository cloned into `./presentation/reveal.js` and dependencies installed (npm install).",
                 "Successfully initialized slide deck",
                 auxiliary_data={
                     "success": True,
@@ -108,9 +115,12 @@ class SlideDeckCompleteTool(LLMTool):
         "required": ["slide_paths"],
     }
 
-    def __init__(self, workspace_manager: WorkspaceManager) -> None:
+    def __init__(
+        self, workspace_manager: WorkspaceManager, str_replace_client: StrReplaceClient
+    ) -> None:
         super().__init__()
         self.workspace_manager = workspace_manager
+        self.str_replace_client = str_replace_client
 
     async def run_impl(
         self,
@@ -134,12 +144,11 @@ class SlideDeckCompleteTool(LLMTool):
             SLIDE_IFRAME_TEMPLATE.format(slide_path=slide_path)
             for slide_path in slide_paths
         ]
+        index_path = str(
+            self.workspace_manager.relative_path("./presentation/reveal.js/index.html")
+        )
         try:
-            index_path = (
-                f"{self.workspace_manager.root}/presentation/reveal.js/index.html"
-            )
-            with open(index_path, "r") as file:
-                index_content = file.read()
+            index_content = self.str_replace_client.read_file(index_path).file_content
         except Exception as e:
             return ToolImplOutput(
                 f"Error reading `index.html`: {str(e)}",
@@ -151,8 +160,7 @@ class SlideDeckCompleteTool(LLMTool):
         index_content = index_content.replace(
             "<!--PLACEHOLDER SLIDES REPLACE THIS-->", slide_iframes_str
         )
-        with open(index_path, "w") as file:
-            file.write(index_content)
+        self.str_replace_client.write_file(index_path, index_content)
 
         message = f"Successfully combined slides with order {slide_paths} into `presentation/reveal.js/index.html`. If the order is not correct, you can use the `slide_deck_complete` tool again to correct the order. The final presentation is now available in `presentation/reveal.js/index.html`."
 
