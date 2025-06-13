@@ -1,7 +1,8 @@
 import asyncio
 import json
 import logging
-from typing import Any, List, Optional
+import time
+from typing import Any, List, Optional, Tuple
 from functools import partial
 import uuid
 from datetime import datetime
@@ -84,18 +85,48 @@ This agent conducts thorough reviews with emphasis on:
 
         self.message_queue = message_queue
         self.websocket = websocket
+        
+        # Cache for tool parameters to avoid repeated validation
+        self._cached_tool_params = None
 
     async def _process_messages(self):
         pass
+    
+    async def _generate_llm_response(
+        self, 
+        messages: List[Any], 
+        tools: List[ToolCallParameters]
+    ) -> Tuple[List[Any], Any]:
+        """Centralized LLM response generation with timing metrics."""
+        start_time = time.time()
+        
+        # Use asyncio.to_thread for cleaner async execution
+        model_response, metadata = await asyncio.to_thread(
+            self.client.generate,
+            messages=messages,
+            max_tokens=self.max_output_tokens,
+            tools=tools,
+            system_prompt=self.system_prompt,
+        )
+        
+        elapsed = time.time() - start_time
+        self.logger_for_agent_logs.debug(f"LLM generation took {elapsed:.2f}s")
+        
+        return model_response, metadata
 
     def _validate_tool_parameters(self):
-        """Validate tool parameters and check for duplicates."""
+        """Validate tool parameters and check for duplicates with caching."""
+        if self._cached_tool_params is not None:
+            return self._cached_tool_params
+            
         tool_params = [tool.get_tool_param() for tool in self.tool_manager.get_tools()]
         tool_names = [param.name for param in tool_params]
         sorted_names = sorted(tool_names)
         for i in range(len(sorted_names) - 1):
             if sorted_names[i] == sorted_names[i + 1]:
                 raise ValueError(f"Tool {sorted_names[i]} is duplicated")
+        
+        self._cached_tool_params = tool_params
         return tool_params
 
     def start_message_processing(self):
@@ -152,6 +183,13 @@ Now your turn to review the general agent's work.
             self.logger_for_agent_logs.info(
                 f"(Current token count: {current_tok_count})\n"
             )
+            
+            # Add early token limit warning
+            max_context = getattr(self.context_manager, 'max_context_length', float('inf'))
+            if max_context != float('inf') and current_tok_count > max_context * 0.9:
+                self.logger_for_agent_logs.warning(
+                    f"Approaching token limit: {current_tok_count}/{max_context}"
+                )
 
             truncated_messages_for_llm = (
                 self.context_manager.apply_truncation_if_needed(current_messages)
@@ -159,16 +197,9 @@ Now your turn to review the general agent's work.
 
             self.history.set_message_list(truncated_messages_for_llm)
 
-            loop = asyncio.get_event_loop()
-            model_response, _ = await loop.run_in_executor(
-                None,
-                partial(
-                    self.client.generate,
-                    messages=truncated_messages_for_llm,
-                    max_tokens=self.max_output_tokens,
-                    tools=all_tool_params,
-                    system_prompt=self.system_prompt,
-                ),
+            model_response, _ = await self._generate_llm_response(
+                truncated_messages_for_llm, 
+                all_tool_params
             )
 
             if len(model_response) == 0:
@@ -213,30 +244,30 @@ Now your turn to review the general agent's work.
                         self.context_manager.apply_truncation_if_needed(current_messages)
                     )
                     self.history.set_message_list(truncated_messages_for_llm)
-                    loop = asyncio.get_event_loop()
-                    model_response, _ = await loop.run_in_executor(
-                        None,
-                        partial(
-                            self.client.generate,
-                            messages=truncated_messages_for_llm,
-                            max_tokens=self.max_output_tokens,
-                            tools=all_tool_params,
-                            system_prompt=self.system_prompt,
-                        ),
+                    
+                    # Use centralized LLM generation
+                    model_response, _ = await self._generate_llm_response(
+                        truncated_messages_for_llm,
+                        all_tool_params
                     )
+                    
+                    # Extract text output with proper validation
+                    tool_output = None
                     for message in model_response:
                         if isinstance(message, TextResult):
                             tool_output = message.text
                             break
-                    try:
+                    
+                    if tool_output:
                         return ToolImplOutput(
                             tool_output=tool_output,
                             tool_result_message="Reviewer completed comprehensive review"
                         )
-                    except:
+                    else:
+                        self.logger_for_agent_logs.error("No text output in model response for review summary")
                         return ToolImplOutput(
-                            tool_output="ERROR: Reviewer did not complete review",
-                            tool_result_message="Review incomplete"
+                            tool_output="ERROR: Reviewer did not provide text feedback",
+                            tool_result_message="Review incomplete - no text response"
                         )
 
         # If we exhausted all turns without completing review
@@ -309,11 +340,25 @@ Now your turn to review the general agent's work.
         Returns:
             The review result string.
         """
-        return asyncio.run(
-            self.run_agent_async(task, result, workspace_dir, resume)
-        )
+        try:
+            # Check if there's already an event loop running
+            loop = asyncio.get_running_loop()
+            # If we're here, there's a loop, so create a task
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    asyncio.run,
+                    self.run_agent_async(task, result, workspace_dir, resume)
+                )
+                return future.result()
+        except RuntimeError:
+            # No event loop running, safe to use asyncio.run
+            return asyncio.run(
+                self.run_agent_async(task, result, workspace_dir, resume)
+            )
 
     def clear(self):
         """Clear the dialog and reset interruption state."""
         self.history.clear()
         self.interrupted = False
+        self._cached_tool_params = None  # Clear cached tool parameters
