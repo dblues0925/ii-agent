@@ -1,5 +1,9 @@
 from unittest.mock import MagicMock, patch
+
+import pytest
 from ii_agent.tools.str_replace_tool_relative import StrReplaceEditorTool
+
+pytest_plugins = ("pytest_asyncio",)
 
 
 def build_ws_manager(root):
@@ -11,7 +15,8 @@ def build_ws_manager(root):
     return workspace_manager
 
 
-def test_view_command(tmp_path):
+@pytest.mark.asyncio
+async def test_view_command(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
@@ -23,7 +28,7 @@ def test_view_command(tmp_path):
     )
 
     # Test viewing whole file
-    result = tool.run_impl({"command": "view", "path": str(test_file)})
+    result = await tool.run_impl({"command": "view", "path": str(test_file)})
     assert result.success
     assert "line1" in result.tool_output
     assert "line2" in result.tool_output
@@ -31,7 +36,7 @@ def test_view_command(tmp_path):
     assert "Total lines in file: 3" in result.tool_output
 
     # Test viewing range - should still show total lines in file
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "view",
             "path": str(test_file),
@@ -45,7 +50,8 @@ def test_view_command(tmp_path):
     assert "Total lines in file: 3" in result.tool_output
 
 
-def test_view_directory(tmp_path):
+@pytest.mark.asyncio
+async def test_view_directory(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_dir = tmp_path / "test_dir"
@@ -61,14 +67,14 @@ def test_view_directory(tmp_path):
     )
 
     # Test viewing directory
-    result = tool.run_impl({"command": "view", "path": str(test_dir)})
+    result = await tool.run_impl({"command": "view", "path": str(test_dir)})
     assert result.success
     assert "file1.txt" in result.tool_output
     assert "file2.txt" in result.tool_output
     assert "subdir" in result.tool_output
 
     # Test view_range not allowed for directory
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "view",
             "path": str(test_dir),
@@ -79,7 +85,8 @@ def test_view_directory(tmp_path):
     assert "not allowed" in result.tool_output
 
 
-def test_view_invalid_range(tmp_path):
+@pytest.mark.asyncio
+async def test_view_invalid_range(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
@@ -92,7 +99,7 @@ def test_view_invalid_range(tmp_path):
 
     # Test invalid range formats
     for invalid_range in [[1], [1, 2, 3], [-1, 2], [2, 1], [1, 10]]:
-        result = tool.run_impl(
+        result = await tool.run_impl(
             {
                 "command": "view",
                 "path": str(test_file),
@@ -103,7 +110,8 @@ def test_view_invalid_range(tmp_path):
         assert "Invalid" in result.tool_output
 
 
-def test_create_command(tmp_path):
+@pytest.mark.asyncio
+async def test_create_command(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "new.txt"
@@ -114,7 +122,7 @@ def test_create_command(tmp_path):
     )
 
     # Test creating new file
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "create",
             "path": str(test_file),
@@ -125,7 +133,7 @@ def test_create_command(tmp_path):
     assert test_file.read_text() == "test content"
 
     # Test creating existing file fails
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "create",
             "path": str(test_file),
@@ -135,25 +143,29 @@ def test_create_command(tmp_path):
     assert not result.success
 
     # Test missing file_text
-    result = tool.run_impl({"command": "create", "path": str(tmp_path / "another.txt")})
+    result = await tool.run_impl(
+        {"command": "create", "path": str(tmp_path / "another.txt")}
+    )
     assert not result.success
     assert "file_text" in result.tool_output
 
 
 @patch("pathlib.Path.write_text")
-def test_create_with_error(mock_write, tmp_path):
+@pytest.mark.asyncio
+async def test_create_with_error(mock_write, tmp_path):
     mock_write.side_effect = PermissionError("Permission denied")
     tool = StrReplaceEditorTool(
         workspace_manager=build_ws_manager(tmp_path),
         ignore_indentation_for_str_replace=False,
     )
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {"command": "create", "path": "/test.txt", "file_text": "content"}
     )
     assert not result.success
 
 
-def test_str_replace_command(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_command(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
@@ -165,7 +177,7 @@ def test_str_replace_command(tmp_path):
     )
 
     # Test successful replacement - should show total lines in file
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -178,7 +190,7 @@ def test_str_replace_command(tmp_path):
     assert "Total lines in file: 3" in result.tool_output
 
     # Test replacement with multiline string - should update total lines
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -190,7 +202,7 @@ def test_str_replace_command(tmp_path):
     assert "Total lines in file: 5" in result.tool_output
 
     # Test non-existent string
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -203,7 +215,7 @@ def test_str_replace_command(tmp_path):
 
     # Test multiple occurrences
     test_file.write_text("line1\nline2\nline2")
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -215,7 +227,8 @@ def test_str_replace_command(tmp_path):
     assert "Multiple occurrences" in result.tool_output
 
 
-def test_str_replace_edge_cases(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_edge_cases(tmp_path):
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
     test_file.write_text("line1\nline2\nline3")
@@ -226,12 +239,12 @@ def test_str_replace_edge_cases(tmp_path):
     )
 
     # Test missing parameters
-    result = tool.run_impl({"command": "str_replace", "path": str(test_file)})
+    result = await tool.run_impl({"command": "str_replace", "path": str(test_file)})
     assert not result.success
     assert "required" in result.tool_output
 
     # Test empty new_str
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -243,7 +256,7 @@ def test_str_replace_edge_cases(tmp_path):
     assert test_file.read_text() == "line1\n\nline3"
 
     # Test multiline strings
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -254,7 +267,8 @@ def test_str_replace_edge_cases(tmp_path):
     assert result.success
 
 
-def test_insert_command(tmp_path):
+@pytest.mark.asyncio
+async def test_insert_command(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
@@ -266,7 +280,7 @@ def test_insert_command(tmp_path):
     )
 
     # Test inserting in middle - should show total lines
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "insert",
             "path": str(test_file),
@@ -279,7 +293,7 @@ def test_insert_command(tmp_path):
     assert "Total lines in file: 4" in result.tool_output
 
     # Test inserting multiline string - should update total lines
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "insert",
             "path": str(test_file),
@@ -291,7 +305,7 @@ def test_insert_command(tmp_path):
     assert "Total lines in file: 7" in result.tool_output
 
     # Test invalid line number
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "insert",
             "path": str(test_file),
@@ -303,7 +317,8 @@ def test_insert_command(tmp_path):
     assert "Invalid" in result.tool_output
 
 
-def test_insert_edge_cases(tmp_path):
+@pytest.mark.asyncio
+async def test_insert_edge_cases(tmp_path):
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
     test_file.write_text("line1\nline2\nline3")
@@ -314,12 +329,12 @@ def test_insert_edge_cases(tmp_path):
     )
 
     # Test missing parameters
-    result = tool.run_impl({"command": "insert", "path": str(test_file)})
+    result = await tool.run_impl({"command": "insert", "path": str(test_file)})
     assert not result.success
     assert "required" in result.tool_output
 
     # Test insert at beginning
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "insert",
             "path": str(test_file),
@@ -331,7 +346,7 @@ def test_insert_edge_cases(tmp_path):
     assert test_file.read_text().startswith("first\n")
 
     # Test insert at end
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "insert",
             "path": str(test_file),
@@ -343,7 +358,7 @@ def test_insert_edge_cases(tmp_path):
     assert test_file.read_text().endswith("last")
 
     # Test negative line number
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "insert",
             "path": str(test_file),
@@ -354,7 +369,8 @@ def test_insert_edge_cases(tmp_path):
     assert not result.success
 
 
-def test_undo_edit_command(tmp_path):
+@pytest.mark.asyncio
+async def test_undo_edit_command(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
@@ -366,7 +382,7 @@ def test_undo_edit_command(tmp_path):
     )
 
     # Make an edit that adds lines
-    tool.run_impl(
+    await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -376,18 +392,19 @@ def test_undo_edit_command(tmp_path):
     )
 
     # Test undo - should show correct total lines after reverting
-    result = tool.run_impl({"command": "undo_edit", "path": str(test_file)})
+    result = await tool.run_impl({"command": "undo_edit", "path": str(test_file)})
     assert result.success
     assert test_file.read_text() == "line1\nline2\nline3"
     assert "Total lines in file: 3" in result.tool_output
 
     # Test undo with no history
-    result = tool.run_impl({"command": "undo_edit", "path": str(test_file)})
+    result = await tool.run_impl({"command": "undo_edit", "path": str(test_file)})
     assert not result.success
     assert "No edit history" in result.tool_output
 
 
-def test_multiple_undo_operations(tmp_path):
+@pytest.mark.asyncio
+async def test_multiple_undo_operations(tmp_path):
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
     test_file.write_text("original")
@@ -398,7 +415,7 @@ def test_multiple_undo_operations(tmp_path):
     )
 
     # Make multiple edits
-    tool.run_impl(
+    await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -406,7 +423,7 @@ def test_multiple_undo_operations(tmp_path):
             "new_str": "first",
         }
     )
-    tool.run_impl(
+    await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -416,16 +433,17 @@ def test_multiple_undo_operations(tmp_path):
     )
 
     # Test multiple undos
-    result = tool.run_impl({"command": "undo_edit", "path": str(test_file)})
+    result = await tool.run_impl({"command": "undo_edit", "path": str(test_file)})
     assert result.success
     assert test_file.read_text() == "first"
 
-    result = tool.run_impl({"command": "undo_edit", "path": str(test_file)})
+    result = await tool.run_impl({"command": "undo_edit", "path": str(test_file)})
     assert result.success
     assert test_file.read_text() == "original"
 
 
-def test_invalid_command(tmp_path):
+@pytest.mark.asyncio
+async def test_invalid_command(tmp_path):
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.py"
     test_file.write_text("test")
@@ -433,7 +451,7 @@ def test_invalid_command(tmp_path):
         workspace_manager=workspace_manager,
         ignore_indentation_for_str_replace=False,
     )
-    result = tool.run_impl({"command": "invalid", "path": str(test_file)})
+    result = await tool.run_impl({"command": "invalid", "path": str(test_file)})
     assert not result.success
     assert "Unrecognized command" in result.tool_output
 
@@ -447,7 +465,8 @@ def test_tool_start_message():
     assert message == "Editing file /test.txt"
 
 
-def test_str_replace_with_indentation(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_with_indentation(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test_indentation.py"
@@ -470,7 +489,7 @@ def test_str_replace_with_indentation(tmp_path):
 
     # Test with different indentation in old_str
     # Original indentation is 8 spaces for the inner if block
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -485,7 +504,8 @@ def test_str_replace_with_indentation(tmp_path):
     assert "Modified World" in test_file.read_text()
 
 
-def test_str_replace_with_different_indentation_levels(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_with_different_indentation_levels(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test_multi_indent.py"
@@ -513,7 +533,7 @@ def test_str_replace_with_different_indentation_levels(tmp_path):
 
     # Test with completely different indentation in old_str
     # but preserving the relative structure
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -535,7 +555,8 @@ else:
     assert "skip_modified(item)" in test_file.read_text()
 
 
-def test_str_replace_with_mixed_indentation(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_with_mixed_indentation(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test_mixed_indent.py"
@@ -561,7 +582,7 @@ def test_str_replace_with_mixed_indentation(tmp_path):
     )
 
     # Test with no indentation in old_str
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -579,7 +600,8 @@ def test_str_replace_with_mixed_indentation(tmp_path):
     assert "processed_value" in test_file.read_text()
 
 
-def test_str_replace_indentation_edge_cases(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_indentation_edge_cases(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test_indent_edge.py"
@@ -607,7 +629,7 @@ def test_str_replace_indentation_edge_cases(tmp_path):
     )
 
     # Test with empty lines in the pattern
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -623,7 +645,7 @@ def test_str_replace_indentation_edge_cases(tmp_path):
     assert "No empty line anymore" in test_file.read_text()
 
     # Test with inconsistent indentation
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -642,7 +664,8 @@ def test_str_replace_indentation_edge_cases(tmp_path):
     assert "Consistent indentation" in test_file.read_text()
 
 
-def test_str_replace_no_match_after_indentation_attempts(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_no_match_after_indentation_attempts(tmp_path):
     # Setup
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test_no_match.py"
@@ -661,7 +684,7 @@ def test_str_replace_no_match_after_indentation_attempts(tmp_path):
     )
 
     # Test with a string that won't match even with indentation adjustment
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -677,7 +700,8 @@ def test_str_replace_no_match_after_indentation_attempts(tmp_path):
     # The error message doesn't mention indentation since that's an implementation detail
 
 
-def test_str_replace_empty_old_str(tmp_path):
+@pytest.mark.asyncio
+async def test_str_replace_empty_old_str(tmp_path):
     workspace_manager = build_ws_manager(tmp_path)
     test_file = tmp_path / "test.txt"
 
@@ -688,7 +712,7 @@ def test_str_replace_empty_old_str(tmp_path):
 
     # Test empty old_str with empty file
     test_file.write_text("")
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -701,7 +725,7 @@ def test_str_replace_empty_old_str(tmp_path):
 
     # Test empty old_str with non-empty file
     test_file.write_text("existing content")
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),
@@ -714,7 +738,7 @@ def test_str_replace_empty_old_str(tmp_path):
 
     # Test empty old_str with None new_str
     test_file.write_text("")
-    result = tool.run_impl(
+    result = await tool.run_impl(
         {
             "command": "str_replace",
             "path": str(test_file),

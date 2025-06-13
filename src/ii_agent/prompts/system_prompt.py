@@ -3,15 +3,18 @@ import platform
 from ii_agent.sandbox.config import SandboxSettings
 
 
-def get_home_directory(user_docker_container: str) -> str:
-    if user_docker_container:
+from utils import WorkSpaceMode
+
+
+def get_home_directory(workspace_mode: WorkSpaceMode) -> str:
+    if workspace_mode != WorkSpaceMode.LOCAL:
         return SandboxSettings().work_dir
     else:
         return "."
 
 
-def get_deploy_rules(user_docker_container: str) -> str:
-    if user_docker_container:
+def get_deploy_rules(workspace_mode: WorkSpaceMode) -> str:
+    if workspace_mode != WorkSpaceMode.LOCAL:
         return """<deploy_rules>
 - You have access to all ports 10000-10099, you can deploy as many services as you want
 - If a port is already in use, you must use the next available port
@@ -29,8 +32,8 @@ def get_deploy_rules(user_docker_container: str) -> str:
 </deploy_rules>"""
 
 
-def get_file_rules(user_docker_container: str) -> str:
-    if user_docker_container:
+def get_file_rules(workspace_mode: WorkSpaceMode) -> str:
+    if workspace_mode != WorkSpaceMode.LOCAL:
         return """
 <file_rules>
 - Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
@@ -51,10 +54,10 @@ def get_file_rules(user_docker_container: str) -> str:
 """
 
 
-def get_system_prompt(user_docker_container: str = None):
+def get_system_prompt(workspace_mode: WorkSpaceMode):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
-Working directory: {get_home_directory(user_docker_container)} 
+Working directory: {get_home_directory(workspace_mode)} 
 Operating system: {platform.system()}
 
 <intro>
@@ -151,7 +154,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 - DO NOT download the hosted images to the workspace, you must use the hosted image urls
 </image_use_rules>
 
-{get_file_rules(user_docker_container)}
+{get_file_rules(workspace_mode)}
 
 <browser_rules>
 - Before using browser tools, try the `visit_webpage` tool to extract text-only content from a page
@@ -250,7 +253,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 - Remember to do this rule before you start to deploy the website.
 </website_review_rules>
 
-{get_deploy_rules(user_docker_container)}
+{get_deploy_rules(workspace_mode)}
 
 <writing_rules>
 - Write content in continuous paragraphs using varied sentence lengths for engaging prose; avoid list formatting
@@ -272,7 +275,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: `ubuntu`, with sudo privileges
-- Home and current directory: {get_home_directory(user_docker_container)}
+- Home and current directory: {get_home_directory(workspace_mode)}
 
 Development Environment:
 - Python 3.10.12 (commands: python3, pip3)
@@ -296,10 +299,10 @@ Today is {datetime.now().strftime("%Y-%m-%d")}. The first step of a task is to u
 """
 
 
-def get_system_prompt_with_seq_thinking(user_docker_container: str = None):
+def get_system_prompt_with_seq_thinking(workspace_mode: WorkSpaceMode):
     return f"""\
 You are II Agent, an advanced AI assistant created by the II team.
-Working directory: {get_home_directory(user_docker_container)} 
+Working directory: {get_home_directory(workspace_mode)} 
 Operating system: {platform.system()}
 
 <intro>

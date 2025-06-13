@@ -26,7 +26,7 @@ class SlideDeckInitTool(LLMTool):
         self.workspace_manager = workspace_manager
         self.sandbox_settings = SandboxSettings()
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,
@@ -37,7 +37,7 @@ class SlideDeckInitTool(LLMTool):
             os.makedirs(presentation_dir, exist_ok=True)
 
             # Clone the reveal.js repository to the specified path
-            clone_command = "git clone https://github.com/khoangothe/reveal.js.git presentation/reveal.js"
+            clone_command = "git clone https://github.com/Intelligent-Internet/reveal.js.git presentation/reveal.js"
             clone_result = self.terminal_client.shell_exec(
                 self.sandbox_settings.system_shell,
                 clone_command,
@@ -112,7 +112,7 @@ class SlideDeckCompleteTool(LLMTool):
         super().__init__()
         self.workspace_manager = workspace_manager
 
-    def run_impl(
+    async def run_impl(
         self,
         tool_input: dict[str, Any],
         message_history: Optional[MessageHistory] = None,

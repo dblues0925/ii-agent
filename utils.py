@@ -1,12 +1,12 @@
-import os
 from argparse import ArgumentParser
-import uuid
-from pathlib import Path
-from e2b import Sandbox
-from ii_agent.sandbox.config import SandboxSettings
-from ii_agent.sandbox.docker_sandbox import DockerSandbox
-from ii_agent.utils import WorkspaceManager
+from enum import Enum
 from ii_agent.utils.constants import DEFAULT_MODEL
+
+
+class WorkSpaceMode(Enum):
+    DOCKER = "docker"
+    E2B = "e2b"
+    LOCAL = None
 
 
 def parse_common_args(parser: ArgumentParser):
@@ -32,8 +32,8 @@ def parse_common_args(parser: ArgumentParser):
     parser.add_argument(
         "--use-container-workspace",
         help="Use docker container to run commands in, or e2b sandbox",
-        type=str,
-        choices=["docker", "e2b", None],
+        type=lambda x: WorkSpaceMode(x),
+        choices=[t.value for t in WorkSpaceMode],
         default=None,
     )
     parser.add_argument(
@@ -94,44 +94,3 @@ def parse_common_args(parser: ArgumentParser):
         help="Prompt to use for the LLM",
     )
     return parser
-
-
-async def create_container_workspace(container_name: str):
-    settings = SandboxSettings()
-    await DockerSandbox(
-        container_name=container_name,
-        config=settings,
-        volume_bindings={
-            os.getenv("WORKSPACE_PATH") + "/" + container_name: settings.work_dir
-        },
-    ).create()
-
-
-async def create_workspace_manager_for_connection(
-    workspace_root: str, use_container_workspace: str = None
-):
-    """Create a new workspace manager instance for a websocket connection."""
-    # Create unique subdirectory for this connection
-    sandbox_settings = SandboxSettings()
-    if use_container_workspace == "e2b":
-        sandbox = Sandbox(os.getenv("E2B_TEMPLATE_ID"), timeout=3600)
-        connection_id = sandbox.sandbox_id
-        container_path = Path(sandbox_settings.work_dir)
-    elif use_container_workspace == "docker":
-        connection_id = str(uuid.uuid4())
-        await create_container_workspace(container_name=connection_id)
-        container_path = Path(sandbox_settings.work_dir)
-    else:
-        connection_id = str(uuid.uuid4())
-        container_path = None
-
-    workspace_path = Path(workspace_root).resolve()
-    connection_workspace = workspace_path / connection_id
-    connection_workspace.mkdir(parents=True, exist_ok=True)
-
-    # Initialize workspace manager with connection-specific subdirectory
-    workspace_manager = WorkspaceManager(
-        root=connection_workspace, container_workspace=container_path
-    )
-
-    return workspace_manager, connection_id

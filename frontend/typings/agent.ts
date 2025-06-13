@@ -24,6 +24,7 @@ export type Source = {
 };
 
 export enum AgentEvent {
+  AGENT_INITIALIZED = "agent_initialized",
   USER_MESSAGE = "user_message",
   CONNECTION_ESTABLISHED = "connection_established",
   WORKSPACE_INFO = "workspace_info",
@@ -73,6 +74,7 @@ export enum TOOL {
   RETURN_CONTROL_TO_USER = "return_control_to_user",
   SLIDE_DECK_INIT = "slide_deck_init",
   SLIDE_DECK_COMPLETE = "slide_deck_complete",
+  DISPLAY_IMAGE = "display_image",
 
   // browser tools
   BROWSER_VIEW = "browser_view",
@@ -130,6 +132,7 @@ export interface Message {
   action?: ActionStep;
   files?: string[]; // File names
   fileContents?: { [filename: string]: string }; // Base64 content of files
+  isHidden?: boolean;
 }
 
 export interface ISession {
@@ -137,7 +140,7 @@ export interface ISession {
   workspace_dir: string;
   created_at: string;
   device_id: string;
-  first_message: string;
+  name: string;
 }
 
 export interface IEvent {

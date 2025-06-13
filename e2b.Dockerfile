@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     net-tools
 
 COPY src/ii_agent/utils/tool_client /app/ii_client
+COPY templates /app/templates
 
 RUN pip install -r ii_client/requirements.txt
 
