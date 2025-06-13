@@ -466,7 +466,7 @@ class ChatSession:
             await self.send_event(
                 RealtimeEvent(
                     type=EventType.SYSTEM,
-                    content={"message": "Reviewer agent is analyzing the output..."},
+                    content={"type": "reviewer_agent", "message": "Reviewer agent is analyzing the output..."},
                 )
             )
             
@@ -482,7 +482,7 @@ class ChatSession:
                 await self.send_event(
                     RealtimeEvent(
                         type=EventType.SYSTEM,
-                        content={"message": "Applying reviewer feedback..."},
+                        content={"type": "reviewer_agent", "message": "Applying reviewer feedback..."},
                     )
                 )
                 

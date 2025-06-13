@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import {
   ArrowUp,
-  Loader2,
   Paperclip,
-  Settings2,
   Plus,
+  Settings2,
+  Loader2,
   Folder,
+  SearchCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
@@ -469,20 +470,9 @@ const QuestionInput = ({
     }
   }, [isGoogleDriveConnected]);
 
-  // const removeFile = (fileName: string) => {
-  //   setFiles((prev) => {
-  //     // Find the file to remove
-  //     const fileToRemove = prev.find((file) => file.name === fileName);
-
-  //     // Revoke object URL if it exists
-  //     if (fileToRemove?.preview) {
-  //       URL.revokeObjectURL(fileToRemove.preview);
-  //     }
-
-  //     // Filter out the file
-  //     return prev.filter((file) => file.name !== fileName);
-  //   });
-  // };
+  const handleEnableReview = () => {
+    dispatch({ type: "TOGGLE_ENABLE_REVIEWER" });
+  };
 
   useEffect(() => {
     if (onFilesChange) {
@@ -716,6 +706,23 @@ const QuestionInput = ({
           </div>
 
           <div className="flex items-center gap-x-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`hover:bg-gray-700/50 size-10 rounded-full cursor-pointer border border-[#ffffff0f] shadow-sm ${
+                    state.isReviewerEnabled
+                      ? "bg-[#BAE9F4] text-neutral-900"
+                      : "text-gray-400"
+                  }`}
+                  onClick={handleEnableReview}
+                >
+                  <SearchCheck className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Review Results</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

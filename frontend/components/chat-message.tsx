@@ -100,7 +100,7 @@ const ChatMessage = ({
             ? "max-h-[calc(100vh-167px)]"
             : pendingFilesCount > 0
             ? "max-h-[calc(100vh-330px)]"
-            : "max-h-[calc(100vh-210px)]"
+            : "max-h-[calc(100vh-224px)]"
         } overflow-y-auto relative`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
