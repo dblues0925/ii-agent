@@ -70,6 +70,7 @@ This agent conducts thorough reviews with emphasis on:
             tools=tools,
             logger_for_agent_logs=logger_for_agent_logs,
             interactive_mode=interactive_mode,
+            reviewer_mode=True,
         )
 
         self.logger_for_agent_logs = logger_for_agent_logs
@@ -85,25 +86,7 @@ This agent conducts thorough reviews with emphasis on:
         self.websocket = websocket
 
     async def _process_messages(self):
-        try:
-            while True:
-                try:
-                    message: RealtimeEvent = await self.message_queue.get()
-
-                    # Reviewer agent doesn't need to send events to websocket
-                    # Just process the message and continue
-
-                    self.message_queue.task_done()
-                except asyncio.CancelledError:
-                    break
-                except Exception as e:
-                    self.logger_for_agent_logs.error(
-                        f"Error processing WebSocket message: {str(e)}"
-                    )
-        except asyncio.CancelledError:
-            self.logger_for_agent_logs.info("Message processor stopped")
-        except Exception as e:
-            self.logger_for_agent_logs.error(f"Error in message processor: {str(e)}")
+        pass
 
     def _validate_tool_parameters(self):
         """Validate tool parameters and check for duplicates."""
@@ -222,11 +205,39 @@ Now your turn to review the general agent's work.
                 
                 tool_result = await self.tool_manager.run_tool(tool_call, self.history)
                 self.add_tool_call_result(tool_call, tool_result)
-                if tool_call.tool_name == "return_control_to_user":
-                    return ToolImplOutput(
-                        tool_output=tool_result,
-                        tool_result_message="Reviewer completed comprehensive review"
+                if tool_call.tool_name == "return_control_to_general_agent":
+                    summarize_review = "Now based on your review, please rewrite detailed feedback to the general agent."
+                    self.history.add_user_prompt(summarize_review)
+                    current_messages = self.history.get_messages_for_llm()
+                    truncated_messages_for_llm = (
+                        self.context_manager.apply_truncation_if_needed(current_messages)
                     )
+                    self.history.set_message_list(truncated_messages_for_llm)
+                    loop = asyncio.get_event_loop()
+                    model_response, _ = await loop.run_in_executor(
+                        None,
+                        partial(
+                            self.client.generate,
+                            messages=truncated_messages_for_llm,
+                            max_tokens=self.max_output_tokens,
+                            tools=all_tool_params,
+                            system_prompt=self.system_prompt,
+                        ),
+                    )
+                    for message in model_response:
+                        if isinstance(message, TextResult):
+                            tool_output = message.text
+                            break
+                    try:
+                        return ToolImplOutput(
+                            tool_output=tool_output,
+                            tool_result_message="Reviewer completed comprehensive review"
+                        )
+                    except:
+                        return ToolImplOutput(
+                            tool_output="ERROR: Reviewer did not complete review",
+                            tool_result_message="Review incomplete"
+                        )
 
         # If we exhausted all turns without completing review
         return ToolImplOutput(

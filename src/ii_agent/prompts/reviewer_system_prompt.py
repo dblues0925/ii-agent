@@ -187,6 +187,7 @@ Focus on High Impact + Easy/Moderate Implementation + Critical/Important User Va
 </prioritization_framework>
 
 <review_guidelines>
+- First let review overall the output and no need to jump to workspace directory if not necessary, only review the workspace directory if you need to check the code.
 - Be thorough but focused in your analysis
 - Provide specific, actionable feedback rather than generic suggestions
 - Consider both immediate fixes and long-term capability improvements

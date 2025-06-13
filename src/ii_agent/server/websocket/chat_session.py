@@ -51,7 +51,7 @@ class ChatSession:
         self.message_processor: Optional[asyncio.Task] = None
         self.reviewer_message_processor: Optional[asyncio.Task] = None
         self.first_message = True
-        self.enable_reviewer = True# Flag to enable/disable reviewer
+        self.enable_reviewer = False
 
     async def send_event(self, event: RealtimeEvent):
         """Send an event to the client via WebSocket."""
@@ -471,26 +471,13 @@ class ChatSession:
             )
             
             # Run reviewer agent
-            reviewer_result = await asyncio.to_thread(
+            reviewer_feedback = await asyncio.to_thread(
                 self.reviewer_agent.run_agent,
                 task=user_input,
                 result=final_result,
                 workspace_dir=str(self.workspace_manager.root)
             )
-            # Get the reviewer feedback
-            review_feedback = "No feedback"
-            found = False
-            for message in self.reviewer_agent.history._message_lists[::-1]:
-                for sub_message in message:
-                    if hasattr(sub_message, 'tool_name') and sub_message.tool_name == "message_user" and isinstance(sub_message, ToolCall):
-                        if hasattr(sub_message, 'tool_input') and 'text' in sub_message.tool_input:
-                            review_feedback = sub_message.tool_input["text"]
-                            found = True
-                            break
-                if found:
-                    break
-            
-            if review_feedback and review_feedback.strip():
+            if reviewer_feedback and reviewer_feedback.strip():
                 # Send feedback to agent for improvement
                 await self.send_event(
                     RealtimeEvent(
@@ -501,7 +488,7 @@ class ChatSession:
                 
                 feedback_prompt = f"""Based on the reviewer's analysis, here is the feedback for improvement:
 
-{review_feedback}
+{reviewer_feedback}
 
 Please review this feedback and implement the suggested improvements to better complete the original task: "{user_input}"
 """
