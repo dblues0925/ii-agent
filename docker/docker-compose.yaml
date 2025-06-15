@@ -3,7 +3,7 @@ services:
     build:
       context: ..
       dockerfile: docker/proxy_server/Dockerfile
-    image: proxy_server
+    image: proxy_server #Need to update both nginx and proxy_server image name
     profiles:
       - docker
     networks:
@@ -25,7 +25,7 @@ services:
     build:
       context: ..
       dockerfile: docker/nginx/Dockerfile
-    image: nginx
+    image: nginx-${COMPOSE_PROJECT_NAME}
     environment:
       - PUBLIC_DOMAIN=${PUBLIC_DOMAIN}
     ports:
@@ -39,7 +39,7 @@ services:
     build:
       context: ..
       dockerfile: docker/sandbox/Dockerfile
-    image: sandbox
+    image: sandbox-${COMPOSE_PROJECT_NAME}
     profiles:
       - docker
     deploy:

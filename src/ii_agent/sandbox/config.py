@@ -1,10 +1,13 @@
+import os
 from pydantic import BaseModel, Field
 
 
 class SandboxSettings(BaseModel):
     """Configuration for the execution sandbox"""
 
-    image: str = Field("sandbox", description="Base image")
+    image: str = Field(
+        f"sandbox-{os.getenv('COMPOSE_PROJECT_NAME')}", description="Base image"
+    )  # Quick fix for now, should be refactored
     system_shell: str = Field("system_shell", description="System shell")
     work_dir: str = Field("/workspace", description="Container working directory")
     memory_limit: str = Field("1024mb", description="Memory limit")
