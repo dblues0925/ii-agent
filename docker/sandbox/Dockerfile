@@ -1,5 +1,8 @@
 FROM nikolaik/python-nodejs:python3.10-nodejs20-slim
 
+# Set environment variables
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     procps \

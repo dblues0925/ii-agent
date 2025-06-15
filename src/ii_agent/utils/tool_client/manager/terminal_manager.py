@@ -153,9 +153,7 @@ class PexpectSessionManager:
             if view:
                 timeout_message = "Process running. Output so far:"
             else:
-                timeout_message = (
-                    f"The command timeout after {timeout} seconds. Output so far:"
-                )
+                timeout_message = f"The command is still running after {timeout} seconds. Output so far:"
 
             if command_output:
                 return f"{formatted_command}\n{timeout_message}\n{command_output}"
