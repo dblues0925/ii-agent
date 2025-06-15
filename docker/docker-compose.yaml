@@ -77,5 +77,5 @@ services:
       - ii-${COMPOSE_PROJECT_NAME}
 
 networks:
-  ii:
+  ii-${COMPOSE_PROJECT_NAME}:
     name: ii-${COMPOSE_PROJECT_NAME}
