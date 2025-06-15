@@ -15,5 +15,6 @@ class SandboxSettings(BaseModel):
     timeout: int = Field(600, description="Default command timeout (seconds)")
     network_enabled: bool = Field(True, description="Whether network access is allowed")
     network_name: str = Field(
-        "ii", description="Name of the Docker network to connect to"
+        f"ii-{os.getenv('COMPOSE_PROJECT_NAME')}",
+        description="Name of the Docker network to connect to",
     )
