@@ -14,6 +14,7 @@ from ii_agent.tools.image_search_tool import ImageSearchTool
 from ii_agent.tools.base import LLMTool
 from ii_agent.llm.message_history import ToolCallParameters
 from ii_agent.tools.clients.config import RemoteClientConfig
+from ii_agent.tools.project_start_up_tool import ProjectStartUpTool
 from ii_agent.tools.register_deployment import RegisterDeploymentTool
 from ii_agent.tools.shell_tools import (
     ShellExecTool,
@@ -159,6 +160,9 @@ def get_system_tools(
             SlideDeckCompleteTool(
                 workspace_manager=workspace_manager,
                 str_replace_client=str_replace_client,
+            ),
+            ProjectStartUpTool(
+                workspace_manager=workspace_manager, terminal_client=terminal_client
             ),
             DisplayImageTool(workspace_manager=workspace_manager),
         ]

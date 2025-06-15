@@ -15,4 +15,9 @@ WORKDIR /app
 
 RUN pip install -r ii_client/requirements.txt
 
+# Install pnpm
+RUN npm install -g pnpm
+
+COPY .templates /app/templates
+
 CMD ["python", "-m", "ii_client.sandbox_server", "--port", "17300" , "--cwd", "/workspace"]

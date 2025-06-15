@@ -23,6 +23,7 @@ def get_deploy_rules(workspace_mode: WorkSpaceMode) -> str:
 - When starting services, must listen on 0.0.0.0, avoid binding to specific IP addresses or Host headers to ensure user accessibility.
 - Configure CORS to accept requests from any origin
 - Register your service with the register_deployment tool before you start to testing or deploying your service
+- You do not need to build to deploy, exposing dev server is also fine
 - After deployment, use browser tool to quickly test the service with the public url, update your plan accordingly and fix the error if the service is not functional
 </deploy_rules>"""
     else:
@@ -239,6 +240,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 </media_generation_rules>
 
 <coding_rules>
+- If appropriate, use project start up tool to create a project.
 - Must save code to files before execution; direct code input to interpreter commands is forbidden
 - Avoid using package or api services that requires providing keys and tokens
 - Write Python code for complex mathematical calculations and analysis
@@ -397,7 +399,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 - DO NOT download the hosted images to the workspace, you must use the hosted image urls
 </image_rules>
 
-{get_file_rules(user_docker_container)}
+{get_file_rules(workspace_mode)}
 
 <browser_rules>
 - Before using browser tools, try the `visit_webpage` tool to extract text-only content from a page
@@ -477,7 +479,7 @@ You are operating in an agent loop, iteratively completing tasks through these s
 - Remember to do this rule before you start to deploy the website.
 </website_review_rules>
 
-{get_deploy_rules(user_docker_container)}
+{get_deploy_rules(workspace_mode)}
 
 <writing_rules>
 - Write content in continuous paragraphs using varied sentence lengths for engaging prose; avoid list formatting
@@ -499,11 +501,11 @@ You are operating in an agent loop, iteratively completing tasks through these s
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: `ubuntu`, with sudo privileges
-- Home directory: {get_home_directory(user_docker_container)}
+- Home directory: {get_home_directory(workspace_mode)}
 
 Development Environment:
 - Python 3.10.12 (commands: python3, pip3)
-- Node.js 20.18.0 (commands: node, npm)
+- Node.js 20.18.0 (commands: node, npm, pnpm)
 - Basic calculator (command: bc)
 - Installed packages: numpy, pandas, sympy and other common packages
 
