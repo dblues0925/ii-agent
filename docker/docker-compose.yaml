@@ -7,7 +7,7 @@ services:
     profiles:
       - docker
     networks:
-      - ii-${COMPOSE_PROJECT_NAME}
+      - ii
 
   frontend:
     build:
@@ -19,7 +19,7 @@ services:
     volumes:
       - ${WORKSPACE_PATH:-../workspace}:/app/workspace
     networks:
-      - ii-${COMPOSE_PROJECT_NAME}
+      - ii
 
   nginx:
     build:
@@ -33,7 +33,7 @@ services:
     profiles:
       - docker
     networks:
-      - ii-${COMPOSE_PROJECT_NAME}
+      - ii
 
   sandbox:
     build:
@@ -74,8 +74,8 @@ services:
       - ../db:/app/db
       - ~/.ii_agent_file_store:/.ii_agent_file_store
     networks:
-      - ii-${COMPOSE_PROJECT_NAME}
+      - ii
 
 networks:
-  ii-${COMPOSE_PROJECT_NAME}:
+  ii:
     name: ii-${COMPOSE_PROJECT_NAME}
