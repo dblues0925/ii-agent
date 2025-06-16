@@ -23,6 +23,7 @@ import {
   Unplug,
   Eye,
   X,
+  SquareChevronRight,
 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 
@@ -88,6 +89,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return <Sparkle className={className} />;
       case TOOL.PRESENTATION:
         return <Presentation className={className} />;
+      case TOOL.PROJECT_START_UP:
+        return <SquareChevronRight className={className} />;
 
       case TOOL.BROWSER_WAIT:
         return <LoaderCircle className={className} />;
@@ -173,7 +176,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return "Deep Researching";
       case TOOL.PRESENTATION:
         return "Using presentation agent";
-
+      case TOOL.PROJECT_START_UP:
+        return "Starting up project template";
       case TOOL.BROWSER_WAIT:
         return "Waiting for Page to Load";
       case TOOL.BROWSER_VIEW:
@@ -264,7 +268,8 @@ const Action = ({ workspaceInfo, type, value, onClick }: ActionProps) => {
         return value.tool_input?.query;
       case TOOL.PRESENTATION:
         return value.tool_input?.action + ": " + value.tool_input?.description;
-
+      case TOOL.PROJECT_START_UP:
+        return value.tool_input?.framework;
       case TOOL.BROWSER_WAIT:
         return value.tool_input?.url;
       case TOOL.BROWSER_VIEW:
