@@ -4,14 +4,13 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 // import { WebLinksAddon } from "@xterm/addon-web-links";
 // import { SearchAddon } from "@xterm/addon-search";
-import { forwardRef, Ref, RefObject, useEffect, useRef } from "react";
+import { forwardRef, Ref, useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 import clsx from "clsx";
 import chalk from "chalk";
 
 interface TerminalProps {
   className?: string;
-  terminalUsernameRef: RefObject<string>;
 }
 
 const Terminal = (
