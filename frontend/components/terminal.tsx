@@ -4,12 +4,14 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 // import { WebLinksAddon } from "@xterm/addon-web-links";
 // import { SearchAddon } from "@xterm/addon-search";
-import { forwardRef, Ref, useEffect, useRef } from "react";
+import { forwardRef, Ref, RefObject, useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 import clsx from "clsx";
+import chalk from "chalk";
 
 interface TerminalProps {
   className?: string;
+  terminalUsernameRef: RefObject<string>;
 }
 
 const Terminal = (
@@ -55,7 +57,7 @@ const Terminal = (
         term.open(container);
         fitAddon.fit();
 
-        term.writeln("Welcome to II-Agent!");
+        term.writeln(chalk.hex("#BAE9F4")("Welcome to II-Agent!"));
         prompt(term);
 
         term.onKey(({ key, domEvent }) => {
@@ -132,7 +134,7 @@ const Terminal = (
   }, []);
 
   const prompt = (term: XTerm) => {
-    term.write("\r\n$ ");
+    term.write("\r\n");
   };
 
   const clearCurrentLine = (term: XTerm) => {
