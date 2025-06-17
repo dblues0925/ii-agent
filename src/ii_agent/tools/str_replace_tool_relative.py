@@ -451,7 +451,7 @@ Notes for using the `str_replace` command:\n
         new_content_str = "\n".join(new_content)
 
         self._file_history[path].append(content)  # Save old content for undo
-        path.write_text(new_content_str)
+        path.write_text(new_content_str, encoding='utf-8')
         self._send_file_update(path, new_content_str)  # Send update after write
 
         # Create a snippet of the edited section
@@ -498,7 +498,7 @@ Notes for using the `str_replace` command:\n
                 # replace the whole file with new_str
                 new_content = new_str
                 self._file_history[path].append(content)  # Save old content for undo
-                path.write_text(new_content)
+                path.write_text(new_content, encoding='utf-8')
                 self._send_file_update(path, new_content)  # Send update after write
                 # Prepare the success message
                 rel_path = self.workspace_manager.relative_path(path)
@@ -536,7 +536,7 @@ Notes for using the `str_replace` command:\n
 
         new_content = content.replace(old_str, new_str)
         self._file_history[path].append(content)  # Save old content for undo
-        path.write_text(new_content)
+        path.write_text(new_content, encoding='utf-8')
         self._send_file_update(path, new_content)  # Send update after write
 
         # Create a snippet of the edited section
@@ -640,7 +640,8 @@ Notes for using the `str_replace` command:\n
     def read_file(self, path: Path):
         """Read the content of a file from a given path; raise a ToolError if an error occurs."""
         try:
-            return path.read_text()
+            # 确保使用UTF-8编码读取文件
+            return path.read_text(encoding='utf-8')
         except Exception as e:
             rel_path = self.workspace_manager.relative_path(path)
             raise ToolError(f"Ran into {e} while trying to read {rel_path}") from None
@@ -648,7 +649,8 @@ Notes for using the `str_replace` command:\n
     def write_file(self, path: Path, file: str):
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
         try:
-            path.write_text(file)
+            # 确保使用UTF-8编码写入文件，特别是对于.md文件
+            path.write_text(file, encoding='utf-8')
             self._send_file_update(path, file)  # Send update after write
         except Exception as e:
             rel_path = self.workspace_manager.relative_path(path)
